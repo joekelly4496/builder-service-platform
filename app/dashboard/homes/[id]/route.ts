@@ -3,8 +3,10 @@ import { homes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
+    
     const [home] = await db
       .select({
         id: homes.id,
@@ -13,7 +15,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         state: homes.state,
       })
       .from(homes)
-      .where(eq(homes.id, params.id));
+      .where(eq(homes.id, id));
 
     if (!home) {
       return NextResponse.json({ success: false, error: "Home not found" }, { status: 404 });
