@@ -16,13 +16,13 @@ const TRADE_CATEGORIES = [
   "general",
 ];
 
-// This is the test home ID from our setup
 const TEST_HOME_ID = "36defc61-f273-47b9-8606-33a99fb76e2d";
 
 export default function DemoRequestPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     tradeCategory: "",
     priority: "normal",
@@ -30,26 +30,44 @@ export default function DemoRequestPage() {
     homeownerEmail: "",
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const fileArray = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...fileArray]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
+      const submitData = new FormData();
+      submitData.append("homeId", TEST_HOME_ID);
+      submitData.append("tradeCategory", formData.tradeCategory);
+      submitData.append("priority", formData.priority);
+      submitData.append("description", formData.description);
+      submitData.append("homeownerEmail", formData.homeownerEmail);
+
+      files.forEach((file) => {
+        submitData.append("photos", file);
+      });
+
       const response = await fetch("/api/submit-request", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeId: TEST_HOME_ID,
-          ...formData,
-        }),
+        body: submitData,
       });
 
       const result = await response.json();
 
       if (result.success) {
         alert(
-          `✅ Request Submitted Successfully!\n\nRequest ID: ${result.data.requestId}\nStatus: ${result.data.status}\n\nCheck your Supabase database to see the new service_requests record!`
+          `✅ Request Submitted Successfully!\n\nRequest ID: ${result.data.requestId}\nFiles Uploaded: ${result.data.photoCount}\n\nCheck your email and Supabase database!`
         );
         router.push("/");
       } else {
@@ -80,7 +98,6 @@ export default function DemoRequestPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Trade Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 What type of service do you need? *
@@ -102,7 +119,6 @@ export default function DemoRequestPage() {
               </select>
             </div>
 
-            {/* Priority */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Priority Level *
@@ -121,7 +137,6 @@ export default function DemoRequestPage() {
               </select>
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Describe the issue *
@@ -138,7 +153,6 @@ export default function DemoRequestPage() {
               />
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Your Email *
@@ -155,7 +169,73 @@ export default function DemoRequestPage() {
               />
             </div>
 
-            {/* Submit Button */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📸 Upload Photos/Videos (Optional)
+              </label>
+              <div className="space-y-3">
+                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                  <div className="text-center">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <p className="mt-2 text-sm text-gray-600">
+                      <span className="font-semibold text-blue-600">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG, JPG, GIF, MP4, MOV up to 50MB each
+                    </p>
+                    <p className="text-xs font-semibold text-blue-600 mt-1">
+                      You can select multiple files at once
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {files.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-700">
+                      {files.length} file{files.length > 1 ? "s" : ""} selected:
+                    </p>
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            {file.type.startsWith("image/") ? (
+                              <span className="text-2xl">🖼️</span>
+                            ) : (
+                              <span className="text-2xl">🎥</span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="ml-3 text-red-600 hover:text-red-800 font-semibold text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <button
                 type="button"

@@ -38,14 +38,17 @@ export default function HomePage() {
             <p className="text-gray-600 mb-6">
               Manage homes, subcontractors, and service requests
             </p>
-            <div className="inline-block bg-gray-300 text-gray-600 px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
-              Dashboard (Coming Soon)
-            </div>
+            <Link
+              href="/dashboard"
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+            >
+              View Dashboard
+            </Link>
           </div>
         </div>
 
         <div className="mt-16 text-center text-gray-500">
-          <p>Database connected ✓ | Tables created ✓ | Ready to build ✓</p>
+          <p>Database connected ✓ | Tables created ✓ | Dashboard ready ✓</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,22 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sla-reminders",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
+```
+
+5. Save the file (Ctrl + S)
+
+**Your file structure should look like:**
+```
+construction-callback-platform/
+├── app/
+├── lib/
+├── public/
+├── package.json
+├── .env.local
+├── vercel.json          ← NEW FILE HERE
+└── ...

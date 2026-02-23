@@ -2,203 +2,255 @@ import { db } from "@/lib/db";
 import { serviceRequests, homes, subcontractors, builders } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
 import Link from "next/link";
+import CalendarFeedButton from "./CalendarFeedButton";
+
+export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  // For now, we'll use the test builder ID
-  // Later we'll add authentication
   const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
 
-  // Get stats
-  const [builder] = await db
-    .select()
-    .from(builders)
-    .where(eq(builders.id, TEST_BUILDER_ID))
-    .limit(1);
+  try {
+    let builder;
+    try {
+      const builderResults = await db
+        .select()
+        .from(builders)
+        .where(eq(builders.id, TEST_BUILDER_ID));
+      
+      builder = builderResults[0];
 
-  const totalHomes = await db
-    .select({ count: count() })
-    .from(homes)
-    .where(eq(homes.builderId, TEST_BUILDER_ID));
+      if (!builder) {
+        const [newBuilder] = await db
+          .insert(builders)
+          .values({
+            id: TEST_BUILDER_ID,
+            companyName: "Demo Construction Co",
+            contactName: "John Builder",
+            email: "builder@demo.com",
+            phone: "555-0100",
+          })
+          .returning();
+        builder = newBuilder;
+      }
+    } catch (error) {
+      console.error("Builder query error:", error);
+      throw error;
+    }
 
-  const totalSubs = await db
-    .select({ count: count() })
-    .from(subcontractors)
-    .where(eq(subcontractors.builderId, TEST_BUILDER_ID));
+    const totalHomes = await db
+      .select({ count: count() })
+      .from(homes)
+      .where(eq(homes.builderId, TEST_BUILDER_ID));
 
-  const allRequests = await db
-    .select()
-    .from(serviceRequests)
-    .innerJoin(homes, eq(serviceRequests.homeId, homes.id))
-    .where(eq(homes.builderId, TEST_BUILDER_ID))
-    .orderBy(serviceRequests.createdAt);
+    const totalSubs = await db
+      .select({ count: count() })
+      .from(subcontractors)
+      .where(eq(subcontractors.builderId, TEST_BUILDER_ID));
 
-  const totalRequests = allRequests.length;
-  const activeRequests = allRequests.filter(
-    (r) => !["completed", "cancelled", "closed"].includes(r.service_requests.status)
-  ).length;
+    const allRequests = await db
+      .select()
+      .from(serviceRequests)
+      .innerJoin(homes, eq(serviceRequests.homeId, homes.id))
+      .where(eq(homes.builderId, TEST_BUILDER_ID));
 
-  const now = new Date();
-  const overdueRequests = allRequests.filter(
-    (r) =>
-      r.service_requests.status === "submitted" &&
-      new Date(r.service_requests.slaAcknowledgeDeadline) < now
-  ).length;
+    const totalRequests = allRequests.length;
+    const activeRequests = allRequests.filter(
+      (r) => !["completed", "cancelled", "closed"].includes(r.service_requests.status)
+    ).length;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {builder?.companyName || "Builder"} Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1">Manage your service requests and team</p>
+    const now = new Date();
+    const overdueRequests = allRequests.filter(
+      (r) =>
+        r.service_requests.status === "submitted" &&
+        new Date(r.service_requests.slaAcknowledgeDeadline) < now
+    ).length;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        {/* Premium Header */}
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                  {builder?.companyName || "Builder"} Dashboard
+                </h1>
+                <p className="text-base font-medium text-slate-600 mt-1">Manage your service requests and team</p>
+              </div>
+              <Link
+                href="/"
+                className="px-5 py-2.5 border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-semibold text-sm text-slate-700 hover:border-slate-400"
+              >
+                ← Back to Home
+              </Link>
             </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Premium Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard
+              title="Total Requests"
+              value={totalRequests}
+              icon="📋"
+              color="blue"
+            />
+            <StatCard
+              title="Active Requests"
+              value={activeRequests}
+              icon="⚡"
+              color="green"
+            />
+            <StatCard
+              title="Overdue (SLA Breach)"
+              value={overdueRequests}
+              icon="🚨"
+              color="red"
+            />
+            <StatCard
+              title="Homes Managed"
+              value={totalHomes[0].count}
+              icon="🏠"
+              color="purple"
+            />
+          </div>
+
+          {/* Calendar Feed Section */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">📅 Calendar Integration</h2>
+            <p className="text-base font-medium text-slate-600 mb-4">
+              Subscribe to your service requests calendar in Google Calendar or Apple Calendar
+            </p>
+            <CalendarFeedButton builderId={TEST_BUILDER_ID} entityType="builder" />
+          </div>
+
+          {/* Premium Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Link
+              href="/dashboard/requests"
+              className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-blue-300 hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">📋</div>
+              <h3 className="font-bold text-xl mb-2 text-slate-900">Service Requests</h3>
+              <p className="text-slate-600 text-base font-medium">View and manage all requests</p>
+            </Link>
+
+            <Link
+              href="/dashboard/homes"
+              className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-green-300 hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">🏠</div>
+              <h3 className="font-bold text-xl mb-2 text-slate-900">Homes</h3>
+              <p className="text-slate-600 text-base font-medium">Manage homes and homeowners</p>
+            </Link>
+
+            <Link
+              href="/dashboard/subcontractors"
+              className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-purple-300 hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">👷</div>
+              <h3 className="font-bold text-xl mb-2 text-slate-900">Subcontractors</h3>
+              <p className="text-slate-600 text-base font-medium">Manage your trade partners</p>
+            </Link>
+          </div>
+
+          {/* Premium Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+            <div className="px-7 py-6 border-b border-slate-200/60">
+              <h2 className="text-2xl font-bold text-slate-900">Recent Service Requests</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">
+                      Home
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">
+                      Priority
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">
+                      SLA Deadline
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/60">
+                  {allRequests.slice(0, 5).map((req) => (
+                    <tr key={req.service_requests.id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                      <td className="px-6 py-4 text-base font-semibold text-slate-900">
+                        {req.homes.address}
+                      </td>
+                      <td className="px-6 py-4 text-base font-medium text-slate-700 capitalize">
+                        {req.service_requests.tradeCategory}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <PriorityBadge priority={req.service_requests.priority} />
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <StatusBadge status={req.service_requests.status} />
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <SLAIndicator
+                          deadline={new Date(req.service_requests.slaAcknowledgeDeadline)}
+                          status={req.service_requests.status}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {allRequests.length > 5 && (
+              <div className="px-6 py-5 border-t border-slate-200/60 text-center bg-slate-50/30">
+                <Link
+                  href="/dashboard/requests"
+                  className="text-blue-600 hover:text-blue-700 font-bold text-base transition-colors duration-200"
+                >
+                  View all {totalRequests} requests →
+                </Link>
+              </div>
+            )}
+            {allRequests.length === 0 && (
+              <div className="px-6 py-16 text-center">
+                <p className="text-lg font-semibold text-slate-500">No service requests yet. Submit a test request to see it here!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  } catch (error: any) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center px-4">
+        <div className="bg-white p-10 rounded-2xl shadow-xl max-w-2xl border border-red-200">
+          <h1 className="text-3xl font-bold text-red-600 mb-4">Database Connection Error</h1>
+          <p className="text-base font-semibold text-slate-700 mb-4">
+            Failed to connect to the database. Please check your .env.local file.
+          </p>
+          <pre className="bg-slate-100 p-5 rounded-xl text-sm overflow-auto font-mono text-slate-800 border border-slate-200">
+            {error.message}
+          </pre>
+          <div className="mt-6">
             <Link
               href="/"
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-base transition-colors duration-200"
             >
               ← Back to Home
             </Link>
           </div>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Requests"
-            value={totalRequests}
-            icon="📋"
-            color="blue"
-          />
-          <StatCard
-            title="Active Requests"
-            value={activeRequests}
-            icon="⚡"
-            color="green"
-          />
-          <StatCard
-            title="Overdue (SLA Breach)"
-            value={overdueRequests}
-            icon="🚨"
-            color="red"
-          />
-          <StatCard
-            title="Homes Managed"
-            value={totalHomes[0].count}
-            icon="🏠"
-            color="purple"
-          />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Link
-            href="/dashboard/requests"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-2 border-blue-100 hover:border-blue-300"
-          >
-            <div className="text-2xl mb-2">📋</div>
-            <h3 className="font-semibold text-lg mb-1">Service Requests</h3>
-            <p className="text-gray-600 text-sm">View and manage all requests</p>
-          </Link>
-
-          <Link
-            href="/dashboard/homes"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-2 border-green-100 hover:border-green-300"
-          >
-            <div className="text-2xl mb-2">🏠</div>
-            <h3 className="font-semibold text-lg mb-1">Homes</h3>
-            <p className="text-gray-600 text-sm">Manage homes and homeowners</p>
-          </Link>
-
-          <Link
-            href="/dashboard/subcontractors"
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-2 border-purple-100 hover:border-purple-300"
-          >
-            <div className="text-2xl mb-2">👷</div>
-            <h3 className="font-semibold text-lg mb-1">Subcontractors</h3>
-            <p className="text-gray-600 text-sm">Manage your trade partners</p>
-          </Link>
-        </div>
-
-        {/* Recent Requests Preview */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Recent Service Requests</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Home
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    SLA Deadline
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {allRequests.slice(0, 5).map((req) => (
-                  <tr key={req.service_requests.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">
-                      {req.homes.address}
-                    </td>
-                    <td className="px-6 py-4 text-sm capitalize">
-                      {req.service_requests.tradeCategory}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <PriorityBadge priority={req.service_requests.priority} />
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <StatusBadge status={req.service_requests.status} />
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <SLAIndicator
-                        deadline={new Date(req.service_requests.slaAcknowledgeDeadline)}
-                        status={req.service_requests.status}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {allRequests.length > 5 && (
-            <div className="p-4 border-t border-gray-200 text-center">
-              <Link
-                href="/dashboard/requests"
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                View all {totalRequests} requests →
-              </Link>
-            </div>
-          )}
-          {allRequests.length === 0 && (
-            <div className="p-12 text-center text-gray-500">
-              No service requests yet. Submit a test request to see it here!
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
 }
 
-// Component helpers
 function StatCard({
   title,
   value,
@@ -211,20 +263,20 @@ function StatCard({
   color: string;
 }) {
   const colors = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    green: "bg-green-50 text-green-700 border-green-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-    purple: "bg-purple-50 text-purple-700 border-purple-200",
+    blue: "from-blue-50 to-blue-100/50 text-blue-700 border-blue-200/60",
+    green: "from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200/60",
+    red: "from-red-50 to-red-100/50 text-red-700 border-red-200/60",
+    purple: "from-purple-50 to-purple-100/50 text-purple-700 border-purple-200/60",
   };
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow border-2 ${colors[color as keyof typeof colors]}`}>
+    <div className={`bg-gradient-to-br ${colors[color as keyof typeof colors]} p-6 rounded-2xl shadow-sm border backdrop-blur-sm`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
+          <p className="text-sm font-bold uppercase tracking-wider mb-2 opacity-90">{title}</p>
+          <p className="text-4xl font-bold">{value}</p>
         </div>
-        <div className="text-4xl">{icon}</div>
+        <div className="text-5xl opacity-90">{icon}</div>
       </div>
     </div>
   );
@@ -232,13 +284,13 @@ function StatCard({
 
 function PriorityBadge({ priority }: { priority: string }) {
   const styles = {
-    urgent: "bg-red-100 text-red-700",
-    normal: "bg-yellow-100 text-yellow-700",
-    low: "bg-green-100 text-green-700",
+    urgent: "bg-red-100 text-red-700 ring-red-200",
+    normal: "bg-amber-100 text-amber-700 ring-amber-200",
+    low: "bg-emerald-100 text-emerald-700 ring-emerald-200",
   };
 
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${styles[priority as keyof typeof styles]}`}>
+    <span className={`px-3 py-1.5 rounded-lg text-sm font-bold ${styles[priority as keyof typeof styles]} ring-1`}>
       {priority}
     </span>
   );
@@ -246,18 +298,18 @@ function PriorityBadge({ priority }: { priority: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const styles = {
-    submitted: "bg-blue-100 text-blue-700",
-    acknowledged: "bg-purple-100 text-purple-700",
-    scheduled: "bg-indigo-100 text-indigo-700",
-    in_progress: "bg-yellow-100 text-yellow-700",
-    completed: "bg-green-100 text-green-700",
-    escalated: "bg-red-100 text-red-700",
-    cancelled: "bg-gray-100 text-gray-700",
-    closed: "bg-gray-100 text-gray-700",
+    submitted: "bg-blue-100 text-blue-700 ring-blue-200",
+    acknowledged: "bg-purple-100 text-purple-700 ring-purple-200",
+    scheduled: "bg-indigo-100 text-indigo-700 ring-indigo-200",
+    in_progress: "bg-amber-100 text-amber-700 ring-amber-200",
+    completed: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+    escalated: "bg-red-100 text-red-700 ring-red-200",
+    cancelled: "bg-slate-100 text-slate-700 ring-slate-200",
+    closed: "bg-slate-100 text-slate-700 ring-slate-200",
   };
 
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${styles[status as keyof typeof styles]}`}>
+    <span className={`px-3 py-1.5 rounded-lg text-sm font-bold ${styles[status as keyof typeof styles]} ring-1`}>
       {status.replace("_", " ")}
     </span>
   );
@@ -269,17 +321,17 @@ function SLAIndicator({ deadline, status }: { deadline: Date; status: string }) 
   const isActive = !["completed", "cancelled", "closed", "acknowledged", "scheduled"].includes(status);
 
   if (!isActive) {
-    return <span className="text-gray-500 text-xs">-</span>;
+    return <span className="text-slate-400 text-sm font-medium">-</span>;
   }
 
   if (isPast) {
-    return <span className="text-red-600 font-semibold text-xs">⚠️ OVERDUE</span>;
+    return <span className="text-red-600 font-bold text-sm">⚠️ OVERDUE</span>;
   }
 
   const hoursLeft = Math.round((deadline.getTime() - now.getTime()) / (1000 * 60 * 60));
 
   return (
-    <span className="text-gray-700 text-xs">
+    <span className="text-slate-700 text-sm font-semibold">
       {hoursLeft}h remaining
     </span>
   );
