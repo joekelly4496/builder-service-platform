@@ -18,10 +18,10 @@ function esc(s: string) {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
-
+  const { id } = await params;
+  
   const rows = await db
     .select({ req: serviceRequests, home: homes })
     .from(serviceRequests)
@@ -76,4 +76,3 @@ export async function GET(
     },
   });
 }
-
