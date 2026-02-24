@@ -196,11 +196,10 @@ export async function POST(
       console.log("Email result:", emailResult);
 
       if (emailResult.success) {
-        console.log("✅ Subcontractor notification sent!");
+        console.log("✅ Homeowner notification sent!");
       } else {
-        console.log("❌ Email failed:", emailResult.error);
+        console.log("❌ Email failed:", (emailResult as any).error);
       }
-    }
 
     console.log("========== NEW MESSAGE API COMPLETED ==========");
 
