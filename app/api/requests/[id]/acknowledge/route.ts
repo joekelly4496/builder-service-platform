@@ -44,7 +44,6 @@ export async function POST(
         oldStatus,
         newStatus: "acknowledged",
         metadata: { source: "builder_dashboard" },
-        ipAddress: null,
         timestamp: new Date(),
       });
     } catch {}
