@@ -48,7 +48,6 @@ export async function GET() {
       homeId: home.id,
       subcontractorId: sub.id,
       tradeCategory: "plumbing",
-      notes: "Original plumber for this home",
     });
 
     return NextResponse.json({
