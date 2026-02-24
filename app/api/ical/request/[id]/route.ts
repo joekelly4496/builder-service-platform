@@ -28,7 +28,7 @@ export async function GET(
     }
 
     const { request: req, home, subcontractor } = data;
-    const startDate = new Date(req.scheduledFor);
+    const startDate = new Date(req.scheduledFor!);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
     const now = new Date();
 
@@ -64,3 +64,4 @@ END:VCALENDAR`;
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
+
