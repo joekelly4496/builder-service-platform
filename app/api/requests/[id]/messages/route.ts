@@ -30,7 +30,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   console.log("========== NEW MESSAGE API STARTED ==========");
-  
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -77,11 +77,10 @@ export async function POST(
     console.log("Subcontractor:", requestData.subcontractor.companyName, requestData.subcontractor.email);
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    
+
     if (senderType === "builder") {
       console.log("Builder sent message - notifying homeowner and subcontractor");
 
-      console.log("Preparing homeowner email...");
       const homeownerEmailContent = getNewMessageEmail({
         recipientName: requestData.home.homeownerName,
         senderName,
@@ -109,7 +108,6 @@ export async function POST(
 
       const subMagicLink = magicLinkResults.length > 0 ? `${baseUrl}/sub/${magicLinkResults[0].token}` : undefined;
 
-      console.log("Preparing subcontractor email...");
       const subEmailContent = getNewMessageEmail({
         recipientName: requestData.subcontractor.contactName,
         senderName,
@@ -161,7 +159,7 @@ export async function POST(
       if (emailResult.success) {
         console.log("✅ Homeowner notification sent!");
       } else {
-        console.log("❌ Email failed:", emailResult.error);
+        console.log("❌ Email failed:", (emailResult as any).error);
       }
 
     } else if (senderType === "homeowner") {
@@ -196,10 +194,11 @@ export async function POST(
       console.log("Email result:", emailResult);
 
       if (emailResult.success) {
-        console.log("✅ Homeowner notification sent!");
+        console.log("✅ Subcontractor notification sent!");
       } else {
         console.log("❌ Email failed:", (emailResult as any).error);
       }
+    }
 
     console.log("========== NEW MESSAGE API COMPLETED ==========");
 
