@@ -154,7 +154,7 @@ export default async function SubcontractorsPage() {
                     <CallbackRateBadge rate={metrics.callbackRate} />
                   </td>
                   <td className="px-6 py-4">
-                    <StatusBadge status={metrics.sub.status} />
+                    <StatusBadge status={metrics.sub.status ?? "active"} />
                   </td>
                 </tr>
               ))}
