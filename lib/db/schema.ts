@@ -62,6 +62,8 @@ export const homes = pgTable("homes", {
   homeownerEmail: text("homeowner_email").notNull(),
   homeownerPhone: text("homeowner_phone"),
   calendarToken: text("calendar_token").unique(),
+  projectCompletedAt: timestamp("project_completed_at"),
+  warrantyExpiresAt: timestamp("warranty_expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -85,6 +87,8 @@ export const homeTradeAssignments = pgTable("home_trade_assignments", {
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
   tradeCategory: text("trade_category").notNull(),
+  notes: text("notes"),
+  assignedAt: timestamp("assigned_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -99,8 +103,10 @@ export const serviceRequests = pgTable("service_requests", {
   homeownerContactPreference: text("homeowner_contact_preference"),
   subcontractorNotes: text("subcontractor_notes"),
   completionNotes: text("completion_notes"),
+  photos: jsonb("photos").$type<string[]>(),
   photoUrls: jsonb("photo_urls").$type<string[]>(),
   completionPhotos: jsonb("completion_photos").$type<string[]>(),
+  escalatedAt: timestamp("escalated_at"),
   slaAcknowledgeDeadline: timestamp("sla_acknowledge_deadline").notNull(),
   slaScheduleDeadline: timestamp("sla_schedule_deadline").notNull(),
   slaReminderSent: boolean("sla_reminder_sent").default(false),
@@ -120,6 +126,7 @@ export const serviceRequestAuditLog = pgTable("service_request_audit_log", {
   oldStatus: text("old_status"),
   newStatus: text("new_status"),
   metadata: jsonb("metadata"),
+  ipAddress: text("ip_address"),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
@@ -151,4 +158,64 @@ export const homeownerMagicLinks = pgTable("homeowner_magic_links", {
   expiresAt: timestamp("expires_at").notNull(),
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const homeownerAccounts = pgTable("homeowner_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supabaseUserId: text("supabase_user_id").notNull().unique(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  email: text("email").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const subcontractorAccounts = pgTable("subcontractor_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supabaseUserId: text("supabase_user_id").notNull().unique(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  email: text("email").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const serviceRequestRatings = pgTable("service_request_ratings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  rating: integer("rating").notNull(),
+  review: text("review"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const scheduleApprovals = pgTable("schedule_approvals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
+  status: text("status").notNull().default("pending"),
+  homeownerResponse: text("homeowner_response"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const maintenanceItems = pgTable("maintenance_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  tradeCategory: text("trade_category").notNull(),
+  installedAt: timestamp("installed_at"),
+  installNotes: text("install_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const maintenanceReminders = pgTable("maintenance_reminders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  maintenanceItemId: uuid("maintenance_item_id").references(() => maintenanceItems.id).notNull(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  intervalDays: integer("interval_days").notNull(),
+  nextDueDate: timestamp("next_due_date").notNull(),
+  lastCompletedAt: timestamp("last_completed_at"),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
