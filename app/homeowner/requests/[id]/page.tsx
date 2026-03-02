@@ -31,6 +31,11 @@ interface ServiceRequest {
   completionPhotos: string[] | null;
   subcontractorNotes: string | null;
   completionNotes: string | null;
+  subcontractor: {
+    companyName: string;
+    contactName: string;
+    phone: string | null;
+  } | null;
 }
 
 interface Rating {
@@ -55,7 +60,6 @@ export default function HomeownerRequestDetail({
   const [ratingValue, setRatingValue] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
-  const [ratingSuccess, setRatingSuccess] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +101,11 @@ export default function HomeownerRequestDetail({
       else setError(reqData.error ?? "Failed to load request");
 
       if (msgData.success) setMessages(msgData.messages ?? []);
-      if (ratingData.success && ratingData.rating) setExistingRating(ratingData.rating);
+      if (ratingData.success && ratingData.rating) {
+        setExistingRating(ratingData.rating);
+        setRatingValue(ratingData.rating.rating);
+        setReviewText(ratingData.rating.review ?? "");
+      }
     } catch {
       setError("Failed to load request details");
     } finally {
@@ -136,17 +144,10 @@ export default function HomeownerRequestDetail({
       const res = await fetch(`/api/homeowner/requests/${requestId}/rating`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          rating: ratingValue,
-          review: reviewText,
-        }),
+        body: JSON.stringify({ userId: user.id, rating: ratingValue, review: reviewText }),
       });
       const data = await res.json();
-      if (data.success) {
-        setRatingSuccess(true);
-        setExistingRating({ rating: ratingValue, review: reviewText });
-      }
+      if (data.success) setExistingRating({ rating: ratingValue, review: reviewText });
     } finally {
       setSubmittingRating(false);
     }
@@ -154,208 +155,269 @@ export default function HomeownerRequestDetail({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">⏳</div>
-          <p className="text-slate-600 font-medium">Loading request...</p>
-        </div>
+      <div style={{ minHeight: "100vh", background: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "#6b7280", fontWeight: 500 }}>Loading your request...</p>
       </div>
     );
   }
 
   if (error || !request) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-red-200 p-8 max-w-md w-full text-center">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-red-700 mb-2">Something went wrong</h2>
-          <p className="text-slate-600 mb-6">{error}</p>
-          <a href="/homeowner/dashboard" className="px-6 py-3 bg-slate-600 text-white rounded-xl font-bold hover:bg-slate-700 transition-all inline-block">
-            ← Back to Dashboard
-          </a>
+      <div style={{ minHeight: "100vh", background: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+        <div style={{ background: "white", borderRadius: 16, padding: 32, maxWidth: 400, textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <p style={{ color: "#dc2626", fontWeight: 700, marginBottom: 12 }}>Something went wrong</p>
+          <p style={{ color: "#6b7280", marginBottom: 24 }}>{error}</p>
+          <a href="/homeowner/dashboard" style={{ color: "#2563eb", fontWeight: 600 }}>← Back to Dashboard</a>
         </div>
       </div>
     );
   }
 
-  const allPhotos = [
-    ...(request.photoUrls ?? []),
-    ...(request.photos ?? []),
-    ...(request.completionPhotos ?? []),
-  ].filter(Boolean);
-
+  const allPhotos = [...(request.photoUrls ?? []), ...(request.photos ?? [])].filter(Boolean);
+  const completionPhotos = (request.completionPhotos ?? []).filter(Boolean);
   const isCompleted = ["completed", "closed"].includes(request.status);
 
+  const statusColors: Record<string, { bg: string; color: string; border: string }> = {
+    submitted: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+    acknowledged: { bg: "#f5f3ff", color: "#6d28d9", border: "#ddd6fe" },
+    scheduled: { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" },
+    in_progress: { bg: "#fffbeb", color: "#b45309", border: "#fde68a" },
+    completed: { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+    escalated: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
+    cancelled: { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
+    closed: { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
+  };
+
+  const priorityColors: Record<string, { bg: string; color: string; border: string }> = {
+    urgent: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
+    normal: { bg: "#fffbeb", color: "#b45309", border: "#fde68a" },
+    low: { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+  };
+
+  const sc = statusColors[request.status] ?? statusColors.cancelled;
+  const pc = priorityColors[request.priority] ?? priorityColors.normal;
+
+  const card: React.CSSProperties = {
+    background: "white",
+    borderRadius: 16,
+    padding: 32,
+    marginBottom: 20,
+    boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+    border: "1px solid #f0f0f0",
+  };
+
+  const label: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#6b7280",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    marginBottom: 6,
+    marginTop: 0,
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/homeowner/dashboard" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-semibold text-sm transition-all">
+    <div style={{ minHeight: "100vh", background: "#f8f9fa", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "2rem 1rem" }}>
+
+        {/* Page Header */}
+        <div style={{ marginBottom: "2rem" }}>
+          <a href="/homeowner/dashboard" style={{ color: "#6b7280", fontSize: 14, fontWeight: 500, textDecoration: "none", display: "inline-block", marginBottom: 16 }}>
             ← Back to Dashboard
           </a>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={request.status} />
-            <PriorityBadge priority={request.priority} />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-
-        {/* Request Overview */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h1 className="text-2xl font-bold text-slate-900 capitalize mb-1">
-            {request.tradeCategory} Service Request
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: "#9ca3af", margin: 0 }}>
+            Welcome, {user?.email?.split("@")[0]}!
           </h1>
-          <p className="text-sm text-slate-500 mb-4">
-            Submitted {new Date(request.createdAt).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-          </p>
+          <p style={{ color: "#9ca3af", marginTop: 4, fontSize: 15, marginBottom: 0 }}>Track Your Service Request</p>
+        </div>
+
+        {/* Main Request Card */}
+        <div style={card}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", marginTop: 0, marginBottom: 20, textTransform: "capitalize" }}>
+            {request.tradeCategory} Service Request
+          </h2>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={label}>Status</p>
+            <span style={{ display: "inline-block", padding: "4px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
+              {request.status.replace("_", " ")}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={label}>Priority</p>
+            <span style={{ display: "inline-block", padding: "4px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", background: pc.bg, color: pc.color, border: `1px solid ${pc.border}` }}>
+              {request.priority}
+            </span>
+          </div>
 
           {request.homeownerDescription && (
-            <div className="bg-slate-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Your Description</p>
-              <p className="text-slate-700 font-medium">{request.homeownerDescription}</p>
+            <div style={{ marginBottom: 16 }}>
+              <p style={label}>Your Description</p>
+              <p style={{ color: "#374151", fontWeight: 500, margin: 0 }}>{request.homeownerDescription}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {request.scheduledFor && (
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">📅 Scheduled For</p>
-                <p className="text-blue-900 font-bold">
-                  {new Date(request.scheduledFor).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                </p>
-                <p className="text-blue-700 font-medium text-sm">
-                  {new Date(request.scheduledFor).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                </p>
-              </div>
-            )}
-
-            {request.completedAt && (
-              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">✅ Completed On</p>
-                <p className="text-emerald-900 font-bold">
-                  {new Date(request.completedAt).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                </p>
-              </div>
-            )}
-          </div>
+          {request.scheduledFor && (
+            <div style={{ marginBottom: 16 }}>
+              <p style={label}>📅 Scheduled For</p>
+              <p style={{ color: "#1d4ed8", fontWeight: 700, margin: 0 }}>
+                {new Date(request.scheduledFor).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} at {new Date(request.scheduledFor).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              </p>
+            </div>
+          )}
 
           {request.subcontractorNotes && (
-            <div className="mt-4 bg-purple-50 rounded-xl p-4 border border-purple-100">
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">🔧 Subcontractor Notes</p>
-              <p className="text-purple-900 font-medium">{request.subcontractorNotes}</p>
+            <div style={{ marginBottom: 16 }}>
+              <p style={label}>Subcontractor Notes</p>
+              <p style={{ color: "#374151", fontWeight: 500, margin: 0 }}>{request.subcontractorNotes}</p>
             </div>
           )}
 
           {request.completionNotes && (
-            <div className="mt-4 bg-green-50 rounded-xl p-4 border border-green-100">
-              <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-1">📋 Completion Notes</p>
-              <p className="text-green-900 font-medium">{request.completionNotes}</p>
+            <div style={{ marginBottom: 16 }}>
+              <p style={label}>Completion Notes</p>
+              <p style={{ color: "#374151", fontWeight: 500, margin: 0 }}>{request.completionNotes}</p>
+            </div>
+          )}
+
+          {allPhotos.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <p style={label}>📸 Photos</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {allPhotos.map((url, i) => (
+                  <button key={i} onClick={() => setSelectedPhoto(url)} style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden", cursor: "pointer", padding: 0, aspectRatio: "4/3", background: "#f9fafb" }}>
+                    <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {completionPhotos.length > 0 && (
+            <div style={{ marginTop: allPhotos.length > 0 ? 16 : 0 }}>
+              <p style={label}>📸 Completion Photos</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {completionPhotos.map((url, i) => (
+                  <button key={i} onClick={() => setSelectedPhoto(url)} style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden", cursor: "pointer", padding: 0, aspectRatio: "4/3", background: "#f9fafb" }}>
+                    <img src={url} alt={`Completion ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Photos */}
-        {allPhotos.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">📷 Photos</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {allPhotos.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedPhoto(url)}
-                  className="aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-blue-400 transition-all hover:shadow-md"
-                >
-                  <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">💬 Messages</h2>
-
-          <div className="space-y-3 max-h-96 overflow-y-auto mb-4 pr-1">
+        {/* Messages Card */}
+        <div style={card}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginTop: 0, marginBottom: 20 }}>Messages</h2>
+          <div style={{ minHeight: 80, maxHeight: 360, overflowY: "auto", marginBottom: 16 }}>
             {messages.length === 0 ? (
-              <p className="text-slate-400 font-medium text-sm text-center py-8">No messages yet. Start the conversation!</p>
+              <p style={{ color: "#9ca3af", textAlign: "center", padding: "2rem 0", fontWeight: 500 }}>
+                No messages yet. Send a message to the contractor!
+              </p>
             ) : (
-              messages.map((msg) => {
-                const isHomeowner = msg.senderType === "homeowner";
-                return (
-                  <div key={msg.id} className={`flex ${isHomeowner ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-xs sm:max-w-md rounded-2xl px-4 py-3 ${
-                      isHomeowner
-                        ? "bg-blue-600 text-white rounded-br-sm"
-                        : msg.senderType === "builder"
-                        ? "bg-slate-100 text-slate-900 rounded-bl-sm"
-                        : "bg-purple-50 text-purple-900 border border-purple-100 rounded-bl-sm"
-                    }`}>
-                      <p className={`text-xs font-bold mb-1 ${isHomeowner ? "text-blue-100" : msg.senderType === "builder" ? "text-slate-500" : "text-purple-500"}`}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0" }}>
+                {messages.map((msg) => {
+                  const isHomeowner = msg.senderType === "homeowner";
+                  return (
+                    <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isHomeowner ? "flex-end" : "flex-start" }}>
+                      <p style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4, marginTop: 0, textTransform: "capitalize" }}>
                         {isHomeowner ? "You" : `${msg.senderName} (${msg.senderType})`}
                       </p>
-                      <p className="text-sm font-medium leading-relaxed">{msg.message}</p>
-                      <p className={`text-xs mt-1 ${isHomeowner ? "text-blue-200" : "text-slate-400"}`}>
+                      <div style={{
+                        maxWidth: "75%",
+                        padding: "10px 14px",
+                        borderRadius: isHomeowner ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        background: isHomeowner ? "#2563eb" : "#f3f4f6",
+                        color: isHomeowner ? "white" : "#111827",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        lineHeight: 1.5,
+                      }}>
+                        {msg.message}
+                      </div>
+                      <p style={{ fontSize: 11, color: "#d1d5db", marginTop: 4, marginBottom: 0 }}>
                         {new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
-
-          <div className="flex gap-3">
-            <input
-              type="text"
+          <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: 16 }}>
+            <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              placeholder="Type your message..."
+              rows={3}
+              style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: 10, fontSize: 14, fontWeight: 500, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111827" }}
             />
             <button
               onClick={sendMessage}
               disabled={sendingMessage || !newMessage.trim()}
-              className="px-5 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all text-sm"
+              style={{ marginTop: 10, width: "100%", padding: "12px", background: newMessage.trim() ? "#2563eb" : "#e5e7eb", color: newMessage.trim() ? "white" : "#9ca3af", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: newMessage.trim() ? "pointer" : "not-allowed" }}
             >
-              {sendingMessage ? "..." : "Send"}
+              {sendingMessage ? "Sending..." : "Send Message"}
             </button>
           </div>
         </div>
 
-        {/* Rating — only show if completed */}
-        {isCompleted && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">⭐ Rate This Service</h2>
+        {/* Assigned Contractor */}
+        {request.subcontractor && (
+          <div style={card}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginTop: 0, marginBottom: 20 }}>Assigned Contractor</h2>
+            <div style={{ marginBottom: 12 }}>
+              <p style={label}>Company</p>
+              <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>{request.subcontractor.companyName}</p>
+            </div>
+            <div>
+              <p style={label}>Contact</p>
+              <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>{request.subcontractor.contactName}</p>
+              {request.subcontractor.phone && (
+                <p style={{ color: "#6b7280", margin: "2px 0 0", fontWeight: 500 }}>{request.subcontractor.phone}</p>
+              )}
+            </div>
+          </div>
+        )}
 
+        {/* Service Details */}
+        <div style={card}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginTop: 0, marginBottom: 20 }}>Service Details</h2>
+          <div style={{ marginBottom: request.completedAt ? 12 : 0 }}>
+            <p style={label}>Submitted</p>
+            <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>{new Date(request.createdAt).toLocaleString()}</p>
+          </div>
+          {request.completedAt && (
+            <div>
+              <p style={label}>Completed</p>
+              <p style={{ fontWeight: 700, color: "#15803d", margin: 0 }}>{new Date(request.completedAt).toLocaleString()}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Rating */}
+        {isCompleted && (
+          <div style={card}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginTop: 0, marginBottom: 20 }}>Rate This Service</h2>
             {existingRating ? (
-              <div className="text-center py-4">
-                <div className="flex justify-center gap-1 mb-2">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <span key={s} className={`text-3xl ${s <= existingRating.rating ? "text-amber-400" : "text-slate-200"}`}>★</span>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>
+                  {[1,2,3,4,5].map((s) => (
+                    <span key={s} style={{ color: s <= existingRating.rating ? "#f59e0b" : "#e5e7eb" }}>★</span>
                   ))}
                 </div>
-                {existingRating.review && (
-                  <p className="text-slate-600 font-medium mt-2 italic">"{existingRating.review}"</p>
-                )}
-                <p className="text-sm text-slate-400 mt-2">Thanks for your feedback!</p>
+                {existingRating.review && <p style={{ color: "#6b7280", fontStyle: "italic" }}>"{existingRating.review}"</p>}
+                <p style={{ color: "#9ca3af", fontSize: 13 }}>Thanks for your feedback!</p>
               </div>
             ) : (
               <div>
-                <div className="flex justify-center gap-2 mb-4">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setRatingValue(s)}
-                      className={`text-4xl transition-all hover:scale-110 ${s <= ratingValue ? "text-amber-400" : "text-slate-200 hover:text-amber-300"}`}
-                    >
-                      ★
-                    </button>
+                <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+                  {[1,2,3,4,5].map((s) => (
+                    <button key={s} onClick={() => setRatingValue(s)} style={{ fontSize: 36, background: "none", border: "none", cursor: "pointer", color: s <= ratingValue ? "#f59e0b" : "#e5e7eb", transition: "color 0.15s" }}>★</button>
                   ))}
                 </div>
                 <textarea
@@ -363,12 +425,12 @@ export default function HomeownerRequestDetail({
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Leave a review (optional)..."
                   rows={3}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:border-blue-500 outline-none transition-all resize-none mb-3"
+                  style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: 10, fontSize: 14, fontWeight: 500, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }}
                 />
                 <button
                   onClick={submitRating}
                   disabled={!ratingValue || submittingRating}
-                  className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all"
+                  style={{ width: "100%", padding: 12, background: ratingValue ? "#f59e0b" : "#e5e7eb", color: ratingValue ? "white" : "#9ca3af", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: ratingValue ? "pointer" : "not-allowed" }}
                 >
                   {submittingRating ? "Submitting..." : "Submit Rating"}
                 </button>
@@ -376,54 +438,16 @@ export default function HomeownerRequestDetail({
             )}
           </div>
         )}
+
       </div>
 
-      {/* Photo Lightbox */}
+      {/* Lightbox */}
       {selectedPhoto && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <img src={selectedPhoto} alt="Full size" className="max-w-full max-h-full rounded-xl shadow-2xl" />
-          <button
-            className="absolute top-4 right-4 text-white text-3xl font-bold hover:text-slate-300"
-            onClick={() => setSelectedPhoto(null)}
-          >
-            ×
-          </button>
+        <div onClick={() => setSelectedPhoto(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <img src={selectedPhoto} alt="Full size" style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 12 }} />
+          <button onClick={() => setSelectedPhoto(null)} style={{ position: "absolute", top: 16, right: 20, color: "white", fontSize: 32, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>×</button>
         </div>
       )}
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    submitted: "bg-blue-100 text-blue-700",
-    acknowledged: "bg-purple-100 text-purple-700",
-    scheduled: "bg-indigo-100 text-indigo-700",
-    in_progress: "bg-amber-100 text-amber-700",
-    completed: "bg-emerald-100 text-emerald-700",
-    escalated: "bg-red-100 text-red-700",
-    cancelled: "bg-slate-100 text-slate-700",
-    closed: "bg-slate-100 text-slate-700",
-  };
-  return (
-    <span className={`px-3 py-1 rounded-lg text-xs font-bold ${styles[status] ?? "bg-slate-100 text-slate-700"}`}>
-      {status.replace("_", " ")}
-    </span>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const styles: Record<string, string> = {
-    urgent: "bg-red-100 text-red-700",
-    normal: "bg-amber-100 text-amber-700",
-    low: "bg-green-100 text-green-700",
-  };
-  return (
-    <span className={`px-3 py-1 rounded-lg text-xs font-bold ${styles[priority] ?? "bg-slate-100 text-slate-700"}`}>
-      {priority}
-    </span>
   );
 }
