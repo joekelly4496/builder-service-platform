@@ -1,7 +1,26 @@
 import { db } from "@/lib/db";
-import { serviceRequestRatings, serviceRequests, homes } from "@/lib/db/schema";
+import { serviceRequestRatings, serviceRequests } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const [rating] = await db
+      .select()
+      .from(serviceRequestRatings)
+      .where(eq(serviceRequestRatings.serviceRequestId, id))
+      .limit(1);
+
+    return NextResponse.json({ success: true, rating: rating ?? null });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 
 export async function POST(
   request: Request,
@@ -19,7 +38,6 @@ export async function POST(
       );
     }
 
-    // Get the service request to find the homeId
     const [serviceRequest] = await db
       .select()
       .from(serviceRequests)
@@ -27,13 +45,9 @@ export async function POST(
       .limit(1);
 
     if (!serviceRequest) {
-      return NextResponse.json(
-        { success: false, error: "Request not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
 
-    // Check if rating already exists
     const [existing] = await db
       .select()
       .from(serviceRequestRatings)
@@ -56,9 +70,6 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
