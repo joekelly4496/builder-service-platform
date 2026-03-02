@@ -196,8 +196,8 @@ export default function HomeownerRequestDetail({
   const slaDeadline = new Date(request.slaAcknowledgeDeadline);
   const hoursRemaining = Math.round((slaDeadline.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-  const submittedPhotos = (request.photos ?? []).filter(Boolean);
-  const completionPhotos = [...(request.photoUrls ?? []), ...(request.completionPhotos ?? [])].filter(Boolean);
+  const submittedPhotos = (request.photoUrls ?? []).filter(Boolean);
+  const completionPhotos = (request.completionPhotos ?? []).filter(Boolean);
   const isCompleted = ["completed", "closed"].includes(request.status);
 
   const buildGoogleCalendarUrl = () => {
@@ -219,7 +219,6 @@ export default function HomeownerRequestDetail({
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-8">
       <div className="max-w-4xl mx-auto">
 
-        {/* Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-8 rounded-2xl mb-6">
           <a href="/homeowner/dashboard" className="text-emerald-100 text-sm font-medium hover:text-white mb-4 inline-block">
             ← Back to Dashboard
@@ -233,7 +232,6 @@ export default function HomeownerRequestDetail({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Main Request Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
               <h2 className="text-2xl font-bold text-slate-900 mb-4 capitalize">
                 {request.tradeCategory} Service Request
@@ -323,7 +321,6 @@ export default function HomeownerRequestDetail({
               </div>
             </div>
 
-            {/* Awaiting Response Banner */}
             {request.status === "submitted" && hoursRemaining > 0 && (
               <div className="rounded-2xl shadow-sm border p-6 bg-blue-50 border-blue-200">
                 <h3 className="text-lg font-bold text-slate-900 mb-2">Awaiting Response</h3>
@@ -333,7 +330,6 @@ export default function HomeownerRequestDetail({
               </div>
             )}
 
-            {/* Messages */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
               <h3 className="text-xl font-bold text-slate-900 mb-4">Messages</h3>
               <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
@@ -376,7 +372,6 @@ export default function HomeownerRequestDetail({
             </div>
           </div>
 
-          {/* Right Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {request.subcontractor && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
