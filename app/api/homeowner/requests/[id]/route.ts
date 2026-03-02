@@ -24,14 +24,18 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
 
-    // Get schedule approval if exists
+    const [home] = await db
+      .select()
+      .from(homes)
+      .where(eq(homes.id, row.request.homeId))
+      .limit(1);
+
     const [scheduleApproval] = await db
       .select()
       .from(scheduleApprovals)
       .where(eq(scheduleApprovals.serviceRequestId, id))
       .limit(1);
 
-    // Get rating if exists
     const [rating] = await db
       .select()
       .from(serviceRequestRatings)
@@ -50,13 +54,24 @@ export async function GET(
         completionNotes: row.request.completionNotes,
         scheduledFor: row.request.scheduledFor,
         completedAt: row.request.completedAt,
+        acknowledgedAt: row.request.acknowledgedAt,
         createdAt: row.request.createdAt,
         slaAcknowledgeDeadline: row.request.slaAcknowledgeDeadline,
+        photos: row.request.photos,
         photoUrls: row.request.photoUrls,
+        completionPhotos: row.request.completionPhotos,
         subcontractor: row.subcontractor ? {
           companyName: row.subcontractor.companyName,
           contactName: row.subcontractor.contactName,
+          email: row.subcontractor.email,
           phone: row.subcontractor.phone,
+        } : null,
+        home: home ? {
+          address: home.address,
+          city: home.city,
+          state: home.state,
+          homeownerName: home.homeownerName,
+          homeownerEmail: home.homeownerEmail,
         } : null,
       },
       scheduleApproval: scheduleApproval ?? null,
