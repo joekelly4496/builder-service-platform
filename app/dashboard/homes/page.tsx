@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { homes, homeTradeAssignments, subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import LinkHomeownerButton from "./LinkHomeownerButton";
 
 export default async function HomesPage() {
   const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
@@ -99,6 +100,10 @@ export default async function HomesPage() {
                       {home.homeownerPhone || "Not provided"}
                     </p>
                   </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <LinkHomeownerButton homeId={home.id} homeownerEmail={home.homeownerEmail} />
                 </div>
               </div>
 
