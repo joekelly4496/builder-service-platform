@@ -14,6 +14,9 @@ export default async function HomeownerPortalPage({
   try {
     const { token } = await params;
 
+    const reservedRoutes = ["login", "dashboard", "requests"];
+    if (reservedRoutes.includes(token)) notFound();
+
     const magicLinkResults = await db
       .select()
       .from(homeownerMagicLinks)
