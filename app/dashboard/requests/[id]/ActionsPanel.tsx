@@ -155,5 +155,3 @@ export default function ActionsPanel({ id, status }: Props) {
     </div>
   );
 }
-
-
