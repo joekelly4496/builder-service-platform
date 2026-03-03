@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const revalidate = 0;
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
