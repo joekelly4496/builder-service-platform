@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import SubActions from "../../[token]/SubActions";
@@ -47,8 +47,9 @@ function PriorityBadge({ priority }: { priority: string }) {
 export default function SubRequestDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,7 +62,7 @@ export default function SubRequestDetailPage({
         return;
       }
 
-      const res = await fetch(`/api/sub/requests/${params.id}`, {
+      const res = await fetch(`/api/sub/requests/${id}`, {
         headers: { authorization: `Bearer ${session.access_token}` },
       });
       const json = await res.json();
@@ -77,7 +78,7 @@ export default function SubRequestDetailPage({
     };
 
     load();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -111,7 +112,6 @@ export default function SubRequestDetailPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-8 rounded-2xl mb-6">
           <Link href="/sub/dashboard" className="text-purple-200 hover:text-white font-semibold text-sm mb-4 inline-block">
             ← Back to Dashboard
@@ -122,7 +122,6 @@ export default function SubRequestDetailPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Request Details */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
               <h2 className="text-2xl font-bold text-slate-900 mb-4 capitalize">
                 {request.tradeCategory} Service Request
@@ -216,7 +215,6 @@ export default function SubRequestDetailPage({
               </div>
             </div>
 
-            {/* SLA Banner */}
             {request.status === "submitted" && (
               <div className={`rounded-2xl shadow-sm border p-6 ${
                 isSlaBreached ? "bg-red-50 border-red-200" :
