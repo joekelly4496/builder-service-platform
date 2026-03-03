@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { subcontractors, serviceRequests, homes, homeTradeAssignments } from "@/lib/db/schema";
 import { eq, count, and } from "drizzle-orm";
 import Link from "next/link";
+import LinkSubcontractorButton from "./LinkSubcontractorButton";
 
 export default async function SubcontractorsPage() {
   const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
@@ -12,22 +13,18 @@ export default async function SubcontractorsPage() {
     .where(eq(subcontractors.builderId, TEST_BUILDER_ID))
     .orderBy(subcontractors.companyName);
 
-  // Get performance metrics for each sub
   const subMetrics = await Promise.all(
     allSubs.map(async (sub) => {
-      // Count homes assigned
       const homesAssigned = await db
         .select({ count: count() })
         .from(homeTradeAssignments)
         .where(eq(homeTradeAssignments.subcontractorId, sub.id));
 
-      // Count total requests
       const totalRequests = await db
         .select({ count: count() })
         .from(serviceRequests)
         .where(eq(serviceRequests.assignedSubcontractorId, sub.id));
 
-      // Count acknowledged requests
       const acknowledgedRequests = await db
         .select({ count: count() })
         .from(serviceRequests)
@@ -38,7 +35,6 @@ export default async function SubcontractorsPage() {
           )
         );
 
-      // Count completed requests
       const completedRequests = await db
         .select({ count: count() })
         .from(serviceRequests)
@@ -67,7 +63,6 @@ export default async function SubcontractorsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -130,6 +125,12 @@ export default async function SubcontractorsPage() {
                       </p>
                       <p className="text-sm text-gray-500">{metrics.sub.contactName}</p>
                       <p className="text-xs text-gray-400">{metrics.sub.email}</p>
+                      <div className="mt-2">
+                        <LinkSubcontractorButton
+                          subcontractorId={metrics.sub.id}
+                          subcontractorEmail={metrics.sub.email}
+                        />
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -174,7 +175,6 @@ export default async function SubcontractorsPage() {
           )}
         </div>
 
-        {/* Performance Summary */}
         {subMetrics.length > 0 && (
           <div className="mt-8 bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
