@@ -20,6 +20,9 @@ export default async function SubPortalPage({
   try {
     const { token } = await params;
 
+    const reservedRoutes = ["login", "dashboard", "requests"];
+    if (reservedRoutes.includes(token)) notFound();
+
     const magicLinkResults = await db
       .select()
       .from(subcontractorMagicLinks)
@@ -90,8 +93,6 @@ export default async function SubPortalPage({
     );
     const isSlaBreached = slaDeadline < now && request.status === "submitted";
 
-    // In your schema these are jsonb columns. Depending on drizzle config
-    // they might come back as `string[]`, `unknown`, or `null`.
     const photoUrls = (request as any).photoUrls as string[] | null;
     const completionPhotos = (request as any).completionPhotos as string[] | null;
 
@@ -142,7 +143,7 @@ export default async function SubPortalPage({
                       </p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {photoUrls.map((url, index) => (
-                          <a
+                          
                             key={index}
                             href={url}
                             target="_blank"
@@ -209,7 +210,7 @@ export default async function SubPortalPage({
                       </p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {completionPhotos.map((url, index) => (
-                          <a
+                          
                             key={index}
                             href={url}
                             target="_blank"
@@ -231,22 +232,19 @@ export default async function SubPortalPage({
               </div>
 
               {request.status === "submitted" && (
-                <div
-                  className={`rounded-2xl shadow-sm border p-6 ${
-                    isSlaBreached
-                      ? "bg-red-50 border-red-200"
-                      : hoursRemaining <= 4
-                      ? "bg-yellow-50 border-yellow-200"
-                      : "bg-blue-50 border-blue-200"
-                  }`}
-                >
+                <div className={`rounded-2xl shadow-sm border p-6 ${
+                  isSlaBreached
+                    ? "bg-red-50 border-red-200"
+                    : hoursRemaining <= 4
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-blue-50 border-blue-200"
+                }`}>
                   <h3 className="text-lg font-bold text-slate-900 mb-2">
                     {isSlaBreached ? "⚠️ SLA BREACHED" : "⏰ Response Required"}
                   </h3>
                   {isSlaBreached ? (
                     <p className="text-red-700 font-semibold">
-                      This request is overdue by {Math.abs(hoursRemaining)} hours. Please respond
-                      immediately!
+                      This request is overdue by {Math.abs(hoursRemaining)} hours. Please respond immediately!
                     </p>
                   ) : (
                     <p className="text-slate-700 font-semibold">
@@ -272,7 +270,6 @@ export default async function SubPortalPage({
                   {allRequestsResults.length}
                 </p>
                 <p className="text-sm text-slate-600 font-medium">Total requests assigned to you</p>
-
                 <div className="mt-4 space-y-2">
                   {allRequestsResults.slice(0, 5).map(({ request: req, home: h }) => (
                     <div key={req.id} className="p-3 bg-slate-50 rounded-lg">
@@ -311,9 +308,7 @@ function PriorityBadge({ priority }: { priority: string }) {
     normal: "bg-amber-100 text-amber-700 ring-amber-200",
     low: "bg-emerald-100 text-emerald-700 ring-emerald-200",
   };
-
   const cls = styles[priority] ?? "bg-slate-100 text-slate-700 ring-slate-200";
-
   return (
     <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold ${cls} ring-1`}>
       {String(priority).toUpperCase()}
@@ -332,9 +327,7 @@ function StatusBadge({ status }: { status: string }) {
     cancelled: "bg-slate-100 text-slate-700 ring-slate-200",
     closed: "bg-slate-100 text-slate-700 ring-slate-200",
   };
-
   const cls = styles[status] ?? "bg-slate-100 text-slate-700 ring-slate-200";
-
   return (
     <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold ${cls} ring-1`}>
       {String(status).replace("_", " ").toUpperCase()}

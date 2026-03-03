@@ -1,0 +1,255 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
+import SubActions from "../../[token]/SubActions";
+import SubMessagesSection from "../../[token]/MessagesSection";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    submitted: "bg-blue-100 text-blue-700 ring-blue-200",
+    acknowledged: "bg-purple-100 text-purple-700 ring-purple-200",
+    scheduled: "bg-indigo-100 text-indigo-700 ring-indigo-200",
+    in_progress: "bg-amber-100 text-amber-700 ring-amber-200",
+    completed: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+    escalated: "bg-red-100 text-red-700 ring-red-200",
+    cancelled: "bg-slate-100 text-slate-700 ring-slate-200",
+    closed: "bg-slate-100 text-slate-700 ring-slate-200",
+  };
+  const cls = styles[status] ?? "bg-slate-100 text-slate-700 ring-slate-200";
+  return (
+    <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold ${cls} ring-1`}>
+      {status.replace("_", " ").toUpperCase()}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+  const styles: Record<string, string> = {
+    urgent: "bg-red-100 text-red-700 ring-red-200",
+    normal: "bg-amber-100 text-amber-700 ring-amber-200",
+    low: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  };
+  const cls = styles[priority] ?? "bg-slate-100 text-slate-700 ring-slate-200";
+  return (
+    <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold ${cls} ring-1`}>
+      {priority.toUpperCase()}
+    </span>
+  );
+}
+
+export default function SubRequestDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = "/sub/login";
+        return;
+      }
+
+      const res = await fetch(`/api/sub/requests/${params.id}`, {
+        headers: { authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        setError(json.error);
+        setLoading(false);
+        return;
+      }
+
+      setData(json);
+      setLoading(false);
+    };
+
+    load();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white flex items-center justify-center">
+        <p className="text-slate-600 font-semibold text-lg">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+          <p className="text-red-600 font-bold">{error}</p>
+          <Link href="/sub/dashboard" className="mt-4 inline-block text-purple-600 font-semibold">
+            ← Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { request, home, subcontractor } = data;
+  const now = new Date();
+  const slaDeadline = new Date(request.slaAcknowledgeDeadline);
+  const hoursRemaining = Math.round((slaDeadline.getTime() - now.getTime()) / (1000 * 60 * 60));
+  const isSlaBreached = slaDeadline < now && request.status === "submitted";
+  const photoUrls = request.photoUrls as string[] | null;
+  const completionPhotos = request.completionPhotos as string[] | null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-8 rounded-2xl mb-6">
+          <Link href="/sub/dashboard" className="text-purple-200 hover:text-white font-semibold text-sm mb-4 inline-block">
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-bold">Welcome, {subcontractor.contactName}!</h1>
+          <p className="text-lg font-medium mt-2 opacity-90">{subcontractor.companyName}</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Request Details */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4 capitalize">
+                {request.tradeCategory} Service Request
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-1">Location</p>
+                  <p className="text-lg font-semibold text-slate-900">{home.address}</p>
+                  <p className="text-base text-slate-700">{home.city}, {home.state} {home.zipCode}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-1">Homeowner</p>
+                  <p className="text-lg font-semibold text-slate-900">{home.homeownerName}</p>
+                  <p className="text-base text-slate-700">{home.homeownerEmail}</p>
+                  {home.homeownerPhone && (
+                    <p className="text-base text-slate-700">{home.homeownerPhone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-1">Description</p>
+                  <p className="text-base text-slate-900 font-medium">{request.homeownerDescription}</p>
+                </div>
+
+                {photoUrls && photoUrls.length > 0 && (
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+                      📸 Homeowner Photos
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {photoUrls.map((url: string, index: number) => (
+                        <a key={index} href={url} target="_blank" rel="noopener noreferrer"
+                          className="relative group overflow-hidden rounded-xl border-2 border-slate-200 hover:border-purple-500 transition-all shadow-sm hover:shadow-md">
+                          <img src={url} alt={`Photo ${index + 1}`}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase mb-1">Status</p>
+                    <StatusBadge status={request.status} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase mb-1">Priority</p>
+                    <PriorityBadge priority={request.priority} />
+                  </div>
+                </div>
+
+                {request.scheduledFor && (
+                  <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-xl">
+                    <p className="text-sm font-bold text-indigo-900 uppercase mb-2">📅 Scheduled For</p>
+                    <p className="text-2xl font-bold text-indigo-700">
+                      {new Date(request.scheduledFor).toLocaleDateString("en-US", {
+                        weekday: "long", month: "long", day: "numeric",
+                      })} at {new Date(request.scheduledFor).toLocaleTimeString("en-US", {
+                        hour: "numeric", minute: "2-digit", hour12: true,
+                      })}
+                    </p>
+                  </div>
+                )}
+
+                {request.subcontractorNotes && (
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase mb-1">Your Notes</p>
+                    <p className="text-base text-slate-900 font-medium">{request.subcontractorNotes}</p>
+                  </div>
+                )}
+
+                {completionPhotos && completionPhotos.length > 0 && (
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+                      ✅ Completion Photos
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {completionPhotos.map((url: string, index: number) => (
+                        <a key={index} href={url} target="_blank" rel="noopener noreferrer"
+                          className="relative group overflow-hidden rounded-xl border-2 border-emerald-200 hover:border-emerald-500 transition-all shadow-sm hover:shadow-md">
+                          <img src={url} alt={`Completion photo ${index + 1}`}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SLA Banner */}
+            {request.status === "submitted" && (
+              <div className={`rounded-2xl shadow-sm border p-6 ${
+                isSlaBreached ? "bg-red-50 border-red-200" :
+                hoursRemaining <= 4 ? "bg-yellow-50 border-yellow-200" :
+                "bg-blue-50 border-blue-200"
+              }`}>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                  {isSlaBreached ? "⚠️ SLA BREACHED" : "⏰ Response Required"}
+                </h3>
+                {isSlaBreached ? (
+                  <p className="text-red-700 font-semibold">
+                    This request is overdue by {Math.abs(hoursRemaining)} hours. Please respond immediately!
+                  </p>
+                ) : (
+                  <p className="text-slate-700 font-semibold">
+                    Please acknowledge this request within {hoursRemaining} hours
+                  </p>
+                )}
+              </div>
+            )}
+
+            <SubMessagesSection
+              requestId={request.id}
+              subName={subcontractor.contactName}
+              subEmail={subcontractor.email}
+            />
+          </div>
+
+          <div className="lg:col-span-1">
+            <SubActions requestId={request.id} currentStatus={request.status} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
