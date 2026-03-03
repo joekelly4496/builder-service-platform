@@ -4,6 +4,8 @@ import { eq, count, and } from "drizzle-orm";
 import Link from "next/link";
 import LinkSubcontractorButton from "./LinkSubcontractorButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function SubcontractorsPage() {
   const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
 
