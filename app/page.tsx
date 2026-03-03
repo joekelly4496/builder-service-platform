@@ -1,6 +1,6 @@
-import Link from "next/link";
+"use client";
 
-export const revalidate = 0;
+import Link from "next/link";
 
 export default function HomePage() {
   return (
