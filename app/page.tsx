@@ -67,9 +67,12 @@ export default function HomePage() {
             <p className="text-gray-600 mb-6 flex-1">
               View your assigned service requests, update statuses, and upload completion photos.
             </p>
-            <div className="block text-center bg-purple-200 text-purple-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
-              Coming Soon
-            </div>
+            <Link
+              href="/sub/login"
+              className="block text-center bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            >
+              Subcontractor Portal
+            </Link>
           </div>
         </div>
 
