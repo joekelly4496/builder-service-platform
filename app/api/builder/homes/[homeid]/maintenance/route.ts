@@ -19,35 +19,30 @@ async function verifyBuilderOwnsHome(homeId: string) {
       },
     }
   );
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-
   const builder = await db.query.builders.findFirst({
     where: eq(builders.email, user.email!),
   });
   if (!builder) return null;
-
   const home = await db.query.homes.findFirst({
     where: eq(homes.id, homeId),
   });
   if (!home || home.builderId !== builder.id) return null;
-
   return { builder, home };
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ homeId: string }> }
+  { params }: { params: Promise<{ homeid: string }> }
 ) {
-  const { homeId } = await params;
-  const auth = await verifyBuilderOwnsHome(homeId);
+  const { homeid } = await params;
+  const auth = await verifyBuilderOwnsHome(homeid);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const items = await db.query.maintenanceItems.findMany({
-    where: eq(maintenanceItems.homeId, homeId),
+    where: eq(maintenanceItems.homeId, homeid),
   });
-
   const itemsWithReminders = await Promise.all(
     items.map(async (item) => {
       const reminders = await db.query.maintenanceReminders.findMany({
@@ -56,16 +51,15 @@ export async function GET(
       return { ...item, reminders };
     })
   );
-
   return NextResponse.json({ items: itemsWithReminders });
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ homeId: string }> }
+  { params }: { params: Promise<{ homeid: string }> }
 ) {
-  const { homeId } = await params;
-  const auth = await verifyBuilderOwnsHome(homeId);
+  const { homeid } = await params;
+  const auth = await verifyBuilderOwnsHome(homeid);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
@@ -86,7 +80,6 @@ export async function POST(
       { status: 400 }
     );
   }
-
   if (typeof intervalDays !== "number" || intervalDays < 1) {
     return NextResponse.json(
       { error: "intervalDays must be a positive number" },
@@ -97,7 +90,7 @@ export async function POST(
   const [newItem] = await db
     .insert(maintenanceItems)
     .values({
-      homeId,
+      homeId: homeid,
       name,
       description: description || null,
       tradeCategory,
@@ -113,7 +106,7 @@ export async function POST(
     .insert(maintenanceReminders)
     .values({
       maintenanceItemId: newItem.id,
-      homeId,
+      homeId: homeid,
       title: reminderTitle,
       description: reminderDescription || null,
       intervalDays,
@@ -127,10 +120,10 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ homeId: string }> }
+  { params }: { params: Promise<{ homeid: string }> }
 ) {
-  const { homeId } = await params;
-  const auth = await verifyBuilderOwnsHome(homeId);
+  const { homeid } = await params;
+  const auth = await verifyBuilderOwnsHome(homeid);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
