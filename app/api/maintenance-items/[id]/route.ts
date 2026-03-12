@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { maintenanceItems, maintenanceReminders } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { createClient } from "@/lib/supabase/server";
 
 // PUT /api/maintenance-items/[id]
 export async function PUT(
@@ -10,20 +9,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = await req.json();
     const { name, description, tradeCategory, installedAt, installNotes, reminder } =
       body;
-
-    // Update the maintenance item itself
     const itemUpdate: Record<string, unknown> = {};
     if (name !== undefined) itemUpdate.name = name;
     if (description !== undefined) itemUpdate.description = description;
@@ -31,7 +20,6 @@ export async function PUT(
     if (installedAt !== undefined)
       itemUpdate.installedAt = installedAt ? new Date(installedAt) : null;
     if (installNotes !== undefined) itemUpdate.installNotes = installNotes;
-
     let updatedItem = null;
     if (Object.keys(itemUpdate).length > 0) {
       const [result] = await db
@@ -39,14 +27,11 @@ export async function PUT(
         .set(itemUpdate)
         .where(eq(maintenanceItems.id, id))
         .returning();
-
       if (!result) {
         return NextResponse.json({ error: "Item not found" }, { status: 404 });
       }
       updatedItem = result;
     }
-
-    // Update the reminder if provided
     let updatedReminder = null;
     if (reminder && reminder.id) {
       const reminderUpdate: Record<string, unknown> = {};
@@ -57,15 +42,12 @@ export async function PUT(
         reminderUpdate.intervalDays = Number(reminder.intervalDays);
       if (reminder.isActive !== undefined)
         reminderUpdate.isActive = reminder.isActive;
-
-      // If intervalDays changed, recalculate nextDueDate
       if (reminder.intervalDays !== undefined && !reminder.nextDueDate) {
         const baseDate = installedAt
           ? new Date(installedAt)
           : updatedItem?.installedAt
           ? new Date(updatedItem.installedAt)
           : new Date();
-
         const nextDate = new Date(baseDate);
         const interval = Number(reminder.intervalDays);
         const now = new Date();
@@ -76,18 +58,14 @@ export async function PUT(
       } else if (reminder.nextDueDate) {
         reminderUpdate.nextDueDate = new Date(reminder.nextDueDate);
       }
-
       reminderUpdate.updatedAt = new Date();
-
       const [result] = await db
         .update(maintenanceReminders)
         .set(reminderUpdate)
         .where(eq(maintenanceReminders.id, reminder.id))
         .returning();
-
       updatedReminder = result;
     }
-
     return NextResponse.json({
       item: updatedItem,
       reminder: updatedReminder,
@@ -107,31 +85,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-
-    // Delete reminders first (foreign key constraint)
     await db
       .delete(maintenanceReminders)
       .where(eq(maintenanceReminders.maintenanceItemId, id));
-
-    // Then delete the item
     const [deleted] = await db
       .delete(maintenanceItems)
       .where(eq(maintenanceItems.id, id))
       .returning();
-
     if (!deleted) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
-
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting maintenance item:", error);
