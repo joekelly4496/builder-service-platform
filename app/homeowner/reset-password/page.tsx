@@ -14,10 +14,24 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setSessionReady(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleReset = async () => {
     if (password !== confirm) {
       setError("Passwords don't match");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
     setLoading(true);
@@ -45,6 +59,12 @@ export default function ResetPasswordPage() {
           <p className="text-slate-600 mt-2 font-medium">Enter your new password below</p>
         </div>
 
+        {!sessionReady && !message && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-medium text-sm">
+            Verifying your reset link…
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-medium text-sm">
             {error}
@@ -65,7 +85,8 @@ export default function ResetPasswordPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+              disabled={!sessionReady}
+              className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -75,12 +96,13 @@ export default function ResetPasswordPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+              disabled={!sessionReady}
+              className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <button
             onClick={handleReset}
-            disabled={loading || !password || !confirm}
+            disabled={loading || !password || !confirm || !sessionReady}
             className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all duration-200 disabled:bg-slate-400 disabled:cursor-not-allowed"
           >
             {loading ? "Updating..." : "Update Password"}

@@ -124,12 +124,20 @@ export default function HomeownerDashboard() {
                 {home?.address}, {home?.city}, {home?.state} {home?.zipCode}
               </p>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-3">
+              <a
+                href="/homeowner/maintenance"
+                className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-all"
+              >
+                🔧 Maintenance
+              </a>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
