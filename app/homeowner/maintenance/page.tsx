@@ -63,21 +63,17 @@ export default function HomeownerMaintenancePage() {
     }
 
     try {
-      // Look up the homeowner's home via their profile/homes
-      const { data: homes } = await supabase
-        .from("homes")
-        .select("id, address, city, state")
-        .eq("homeowner_id", session.user.id)
-        .limit(1);
+      const dashRes = await fetch(`/api/homeowner/dashboard?userId=${session.user.id}`);
+      const dashData = await dashRes.json();
 
-      if (!homes || homes.length === 0) {
+      if (!dashData.success || !dashData.home) {
         setError("No home found for your account");
         setLoading(false);
         return;
       }
 
-      const home = homes[0];
-      const res = await fetch(`/api/maintenance-items?homeId=${home.id}`);
+      const homeId = dashData.home.id;
+      const res = await fetch(`/api/maintenance-items?homeId=${homeId}`);
       const data = await res.json();
 
       if (data.items) {
@@ -118,7 +114,6 @@ export default function HomeownerMaintenancePage() {
     );
   }
 
-  // Flatten all reminders for stats
   const allReminders = items.flatMap((item) =>
     item.reminders.filter((r) => r.isActive)
   );
