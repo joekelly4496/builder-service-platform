@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { format, differenceInDays, isPast } from "date-fns";
@@ -26,8 +25,8 @@ type MaintenanceItem = {
 };
 
 const TRADE_CATEGORIES = [
-  "hvac","plumbing","electrical","roofing","flooring",
-  "painting","landscaping","drywall","carpentry","general",
+  "hvac", "plumbing", "electrical", "roofing", "flooring",
+  "painting", "landscaping", "drywall", "carpentry", "general",
 ];
 
 const INTERVAL_PRESETS = [
@@ -56,7 +55,7 @@ function getReminderStatus(nextDueDate: string) {
 
 export default function BuilderMaintenancePage() {
   const params = useParams();
-  const homeId = params.homeId as string;
+  const homeId = params.homeid as string;
 
   const [items, setItems] = useState<MaintenanceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,6 @@ export default function BuilderMaintenancePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -80,7 +78,7 @@ export default function BuilderMaintenancePage() {
 
   const loadItems = useCallback(async () => {
     try {
-      const res = await fetch(`/api/builder/homes/${homeId}/maintenance`);
+      const res = await fetch(`/api/maintenance-items?homeId=${homeId}`);
       if (!res.ok) throw new Error("Failed to load");
       const data = await res.json();
       setItems(data.items || []);
@@ -121,18 +119,21 @@ export default function BuilderMaintenancePage() {
     }
 
     try {
-      const res = await fetch(`/api/builder/homes/${homeId}/maintenance`, {
+      const res = await fetch(`/api/maintenance-items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          homeId,
           name: form.name,
           description: form.description || undefined,
           tradeCategory: form.tradeCategory,
           installedAt: form.installedAt || undefined,
           installNotes: form.installNotes || undefined,
-          reminderTitle: form.reminderTitle,
-          reminderDescription: form.reminderDescription || undefined,
-          intervalDays,
+          reminder: {
+            title: form.reminderTitle,
+            description: form.reminderDescription || undefined,
+            intervalDays,
+          },
         }),
       });
 
@@ -160,7 +161,7 @@ export default function BuilderMaintenancePage() {
     if (!confirm(`Deactivate maintenance reminders for "${itemName}"? The homeowner will no longer receive emails for this item.`)) return;
     setDeletingId(itemId);
     try {
-      const res = await fetch(`/api/builder/homes/${homeId}/maintenance?itemId=${itemId}`, { method: "DELETE" });
+      const res = await fetch(`/api/maintenance-items?itemId=${itemId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to deactivate");
       await loadItems();
       setSuccessMsg(`Reminders for "${itemName}" have been deactivated.`);
@@ -214,7 +215,6 @@ export default function BuilderMaintenancePage() {
               <h2 className="text-lg font-semibold text-gray-900">New Maintenance Item</h2>
               <button onClick={() => { setShowForm(false); setError(""); }} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
-
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -278,7 +278,6 @@ export default function BuilderMaintenancePage() {
 
               <div className="border-t border-gray-100 pt-5">
                 <p className="text-sm font-semibold text-gray-700 mb-4">Reminder Schedule</p>
-
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Email Subject / Reminder Title <span className="text-red-500">*</span>
@@ -289,7 +288,6 @@ export default function BuilderMaintenancePage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Email Message <span className="text-gray-400 font-normal">(optional)</span>
@@ -301,7 +299,6 @@ export default function BuilderMaintenancePage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
