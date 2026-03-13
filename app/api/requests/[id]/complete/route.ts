@@ -1,54 +1,44 @@
 import { db } from "@/lib/db";
-import { serviceRequests, serviceRequestAuditLog } from "@/lib/db/schema";
+import { serviceRequests, serviceRequestAuditLog, homeownerAccounts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
+import { createNotification } from "@/lib/notifications/create";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   console.log("========== COMPLETE REQUEST STARTED ==========");
-
   try {
     const { id } = await params;
     const formData = await request.formData();
-
     const completionNotes = String(formData.get("completionNotes") ?? "");
     const photoFiles = formData.getAll("photos").filter((v): v is File => v instanceof File);
-
     console.log("Request ID:", id);
     console.log("Completion notes:", completionNotes);
     console.log("Number of photos:", photoFiles.length);
-
     const [existingRequest] = await db
       .select()
       .from(serviceRequests)
       .where(eq(serviceRequests.id, id))
       .limit(1);
-
     if (!existingRequest) {
       console.log("❌ Request not found");
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
-
     console.log("Current status:", existingRequest.status);
-
     // ========= Upload completion photos =========
     const photoUrls: string[] = [];
-
     if (photoFiles.length > 0) {
       console.log("Uploading completion photos to Vercel Blob...");
-
       for (let i = 0; i < photoFiles.length; i++) {
         const file = photoFiles[i];
         if (!file || file.size === 0) continue;
-
         const safeBase = (file.name || "completion-photo")
           .replace(/\s+/g, "-")
           .replace(/[^a-zA-Z0-9.\-_]/g, "");
         const key = `requests/${id}/completion/${Date.now()}-${i}-${safeBase}`;
-
         try {
           const blob = await put(key, file, {
             access: "public",
@@ -61,9 +51,7 @@ export async function POST(
         }
       }
     }
-
     console.log("Total completion photos uploaded:", photoUrls.length);
-
     // ✅ IMPORTANT: Your schema field is `completionPhotos`, NOT `completion_photos`
     await db
       .update(serviceRequests)
@@ -75,9 +63,7 @@ export async function POST(
         updatedAt: new Date(),
       })
       .where(eq(serviceRequests.id, id));
-
     console.log("✅ Request marked complete in database");
-
     await db.insert(serviceRequestAuditLog).values({
       serviceRequestId: id,
       actorType: "subcontractor",
@@ -91,10 +77,30 @@ export async function POST(
         photoUrls,
       },
     });
-
     console.log("✅ Audit log created");
-    console.log("========== COMPLETE REQUEST FINISHED ==========");
 
+    // Create in-app notification for homeowner
+    try {
+      const [account] = await db
+        .select()
+        .from(homeownerAccounts)
+        .where(eq(homeownerAccounts.homeId, existingRequest.homeId))
+        .limit(1);
+
+      if (account) {
+        await createNotification({
+          homeownerId: account.id,
+          type: "request_completed",
+          title: `Service Completed: ${existingRequest.tradeCategory}`,
+          message: `Your ${existingRequest.tradeCategory} service request has been marked as completed.${completionNotes ? ` Notes: ${completionNotes.substring(0, 80)}` : ""}`,
+          linkUrl: `/homeowner/requests/${id}`,
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create completion notification:", notifErr);
+    }
+
+    console.log("========== COMPLETE REQUEST FINISHED ==========");
     return NextResponse.json({
       success: true,
       photoCount: photoUrls.length,

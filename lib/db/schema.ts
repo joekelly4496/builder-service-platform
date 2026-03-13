@@ -205,6 +205,46 @@ export const maintenanceItems = pgTable("maintenance_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "maintenance_due",
+  "request_status_change",
+  "new_message",
+  "schedule_approval",
+  "request_completed",
+]);
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  homeownerId: uuid("homeowner_id").references(() => homeownerAccounts.id).notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  linkUrl: text("link_url"),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  homeownerId: uuid("homeowner_id").references(() => homeownerAccounts.id).notNull().unique(),
+  emailEnabled: boolean("email_enabled").default(true).notNull(),
+  smsEnabled: boolean("sms_enabled").default(false).notNull(),
+  inAppEnabled: boolean("in_app_enabled").default(true).notNull(),
+  phoneNumber: text("phone_number"),
+  maintenanceEmail: boolean("maintenance_email").default(true).notNull(),
+  maintenanceSms: boolean("maintenance_sms").default(false).notNull(),
+  maintenanceInApp: boolean("maintenance_in_app").default(true).notNull(),
+  requestUpdatesEmail: boolean("request_updates_email").default(true).notNull(),
+  requestUpdatesSms: boolean("request_updates_sms").default(false).notNull(),
+  requestUpdatesInApp: boolean("request_updates_in_app").default(true).notNull(),
+  messagesEmail: boolean("messages_email").default(true).notNull(),
+  messagesSms: boolean("messages_sms").default(false).notNull(),
+  messagesInApp: boolean("messages_in_app").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+
 export const maintenanceReminders = pgTable("maintenance_reminders", {
   id: uuid("id").primaryKey().defaultRandom(),
   maintenanceItemId: uuid("maintenance_item_id").references(() => maintenanceItems.id).notNull(),

@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
-import { serviceRequests, serviceRequestAuditLog, homes, subcontractors } from "@/lib/db/schema";
+import { serviceRequests, serviceRequestAuditLog, homes, subcontractors, homeownerAccounts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emails/send";
 import { getScheduleConfirmationEmail } from "@/lib/emails/templates";
 import { formatICSDate, escapeICSText } from "@/lib/utils/calendar";
+import { createNotification } from "@/lib/notifications/create";
 
 export async function POST(
   request: Request,
@@ -14,7 +15,6 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const { scheduledFor, notes } = body;
-
     // Get request details with home and subcontractor info
     const [requestData] = await db
       .select({
@@ -27,25 +27,20 @@ export async function POST(
       .innerJoin(subcontractors, eq(serviceRequests.assignedSubcontractorId, subcontractors.id))
       .where(eq(serviceRequests.id, id))
       .limit(1);
-
     if (!requestData) {
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
-
     const updateData: any = {
       status: "scheduled",
       scheduledFor: new Date(scheduledFor),
     };
-
     if (notes) {
       updateData.subcontractorNotes = notes;
     }
-
     await db
       .update(serviceRequests)
       .set(updateData)
       .where(eq(serviceRequests.id, id));
-
     await db.insert(serviceRequestAuditLog).values({
       serviceRequestId: id,
       actorType: "subcontractor",
@@ -55,7 +50,6 @@ export async function POST(
       newStatus: "scheduled",
       metadata: { scheduledFor, notes },
     });
-
     // Send confirmation email to homeowner with calendar attachment
     const emailContent = getScheduleConfirmationEmail({
       homeownerName: requestData.home.homeownerName,
@@ -67,16 +61,13 @@ export async function POST(
       scheduledFor: new Date(scheduledFor),
       notes,
     });
-
     // Create .ics calendar event
     const startDate = new Date(scheduledFor);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hour
     const now = new Date();
-
     const summary = `${requestData.request.tradeCategory.charAt(0).toUpperCase() + requestData.request.tradeCategory.slice(1)} Service Appointment`;
     const description = `Contractor: ${requestData.subcontractor.companyName}\\nContact: ${requestData.subcontractor.contactName}\\nPhone: ${requestData.subcontractor.phone || "N/A"}${notes ? `\\n\\nNotes: ${notes}` : ""}`;
     const location = `${requestData.home.address}, ${requestData.home.city}, ${requestData.home.state} ${requestData.home.zipCode}`;
-
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Construction Platform//Service Appointment//EN
@@ -95,10 +86,8 @@ ORGANIZER:mailto:${requestData.subcontractor.email}
 ATTENDEE:mailto:${requestData.home.homeownerEmail}
 END:VEVENT
 END:VCALENDAR`;
-
     const icsBuffer = Buffer.from(icsContent, "utf-8");
     const icsBase64 = icsBuffer.toString("base64");
-
     // Send email with calendar attachment
     await sendEmail({
       to: requestData.home.homeownerEmail,
@@ -113,8 +102,29 @@ END:VCALENDAR`;
         },
       ],
     });
-
     console.log("✅ Schedule confirmation email sent to homeowner with calendar attachment");
+
+    // Create in-app notification for homeowner
+    try {
+      const [account] = await db
+        .select()
+        .from(homeownerAccounts)
+        .where(eq(homeownerAccounts.homeId, requestData.home.id))
+        .limit(1);
+
+      if (account) {
+        const schedDate = new Date(scheduledFor).toLocaleDateString();
+        await createNotification({
+          homeownerId: account.id,
+          type: "request_status_change",
+          title: `Service Scheduled: ${requestData.request.tradeCategory}`,
+          message: `${requestData.subcontractor.companyName} has scheduled your ${requestData.request.tradeCategory} service for ${schedDate}.`,
+          linkUrl: `/homeowner/requests/${id}`,
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create schedule notification:", notifErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

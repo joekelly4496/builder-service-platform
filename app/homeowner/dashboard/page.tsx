@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import NotificationBell from "../components/NotificationBell";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
 interface ServiceRequest {
   id: string;
   tradeCategory: string;
@@ -18,7 +18,6 @@ interface ServiceRequest {
   completedAt: string | null;
   slaAcknowledgeDeadline: string;
 }
-
 interface HomeData {
   id: string;
   address: string;
@@ -27,18 +26,15 @@ interface HomeData {
   zipCode: string;
   homeownerName: string;
 }
-
 export default function HomeownerDashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [home, setHome] = useState<HomeData | null>(null);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [error, setError] = useState("");
-
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -48,7 +44,6 @@ export default function HomeownerDashboard() {
     setUser(session.user);
     await fetchData(session.user.id);
   };
-
   const fetchData = async (userId: string) => {
     try {
       const res = await fetch(`/api/homeowner/dashboard?userId=${userId}`);
@@ -65,12 +60,10 @@ export default function HomeownerDashboard() {
       setLoading(false);
     }
   };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/homeowner/login";
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
@@ -81,7 +74,6 @@ export default function HomeownerDashboard() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center px-4">
@@ -102,14 +94,12 @@ export default function HomeownerDashboard() {
       </div>
     );
   }
-
   const activeRequests = requests.filter(
     (r) => !["completed", "cancelled", "closed"].includes(r.status)
   );
   const completedRequests = requests.filter((r) =>
     ["completed", "closed"].includes(r.status)
   );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Header */}
@@ -131,6 +121,14 @@ export default function HomeownerDashboard() {
               >
                 🔧 Maintenance
               </a>
+              {user && <NotificationBell userId={user.id} />}
+              <a
+                href="/homeowner/settings"
+                className="px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                aria-label="Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </a>
               <button
                 onClick={handleSignOut}
                 className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
@@ -141,7 +139,6 @@ export default function HomeownerDashboard() {
           </div>
         </div>
       </div>
-
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -158,7 +155,6 @@ export default function HomeownerDashboard() {
             <p className="text-sm font-semibold text-slate-600 mt-1">Completed</p>
           </div>
         </div>
-
         {/* Active Requests */}
         <div>
           <h2 className="text-xl font-bold text-slate-900 mb-4">Active Requests</h2>
@@ -203,7 +199,6 @@ export default function HomeownerDashboard() {
             </div>
           )}
         </div>
-
         {/* Completed Requests */}
         {completedRequests.length > 0 && (
           <div>
@@ -235,7 +230,6 @@ export default function HomeownerDashboard() {
     </div>
   );
 }
-
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     submitted: "bg-blue-100 text-blue-700",
@@ -254,7 +248,6 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
 function PriorityBadge({ priority }: { priority: string }) {
   const styles: Record<string, string> = {
     urgent: "bg-red-100 text-red-700",
