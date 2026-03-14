@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useBuilderId } from "@/lib/utils/use-builder-id";
 
 interface PricingData {
   portalAccessMonthlyPrice: number;
@@ -9,7 +10,7 @@ interface PricingData {
 }
 
 export default function PricingSettingsPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const { builderId } = useBuilderId();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingData>({
@@ -25,7 +26,7 @@ export default function PricingSettingsPage() {
 
   const fetchPricing = async () => {
     try {
-      const res = await fetch(`/api/builder/pricing?builderId=${TEST_BUILDER_ID}`);
+      const res = await fetch(`/api/builder/pricing?builderId=${builderId}`);
       const data = await res.json();
       if (data.success && data.pricing) {
         setPricing({
@@ -48,7 +49,7 @@ export default function PricingSettingsPage() {
       const res = await fetch("/api/builder/pricing", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ builderId: TEST_BUILDER_ID, ...pricing }),
+        body: JSON.stringify({ builderId: builderId, ...pricing }),
       });
       const data = await res.json();
       if (data.success) {

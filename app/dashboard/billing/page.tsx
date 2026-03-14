@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useBuilderId } from "@/lib/utils/use-builder-id";
 
 interface HomeownerBreakdown {
   homeId: string;
@@ -38,7 +39,7 @@ interface ConnectStatus {
 type TabKey = "homefront-bill" | "homeowner-revenue" | "revenue-summary";
 
 export default function BillingDashboard() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const { builderId } = useBuilderId();
   const [activeTab, setActiveTab] = useState<TabKey>("revenue-summary");
   const [loading, setLoading] = useState(true);
   const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null);
@@ -52,8 +53,8 @@ export default function BillingDashboard() {
   const loadData = async () => {
     try {
       const [connectRes, summaryRes] = await Promise.all([
-        fetch(`/api/builder/stripe/connect-status?builderId=${TEST_BUILDER_ID}`),
-        fetch(`/api/builder/billing/summary?builderId=${TEST_BUILDER_ID}`),
+        fetch(`/api/builder/stripe/connect-status?builderId=${builderId}`),
+        fetch(`/api/builder/billing/summary?builderId=${builderId}`),
       ]);
       const connectData = await connectRes.json();
       const summaryData = await summaryRes.json();
@@ -72,7 +73,7 @@ export default function BillingDashboard() {
       const res = await fetch("/api/builder/stripe/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ builderId: TEST_BUILDER_ID }),
+        body: JSON.stringify({ builderId: builderId }),
       });
       const data = await res.json();
       if (data.success && data.url) {

@@ -55,6 +55,7 @@ export const builders = pgTable("builders", {
   stripeConnectAccountId: text("stripe_connect_account_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   stripeSmsSubscriptionItemId: text("stripe_sms_subscription_item_id"),
+  onboardingStatus: text("onboarding_status").default("company_info"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -351,6 +352,22 @@ export const invoices = pgTable("invoices", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const builderAccounts = pgTable("builder_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supabaseUserId: text("supabase_user_id").notNull().unique(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  email: text("email").notNull(),
+  role: text("role").default("owner").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const onboardingStatusEnum = pgEnum("onboarding_status", [
+  "company_info",
+  "add_homes",
+  "add_subcontractors",
+  "completed",
+]);
 
 export const invoiceLineItems = pgTable("invoice_line_items", {
   id: uuid("id").primaryKey().defaultRandom(),

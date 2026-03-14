@@ -51,10 +51,16 @@ export default function HomePage() {
               Manage homes, subcontractors, and service requests all in one place.
             </p>
             <Link
-              href="/dashboard"
+              href="/builder/login"
               className="block text-center bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
             >
-              Builder Dashboard
+              Builder Login
+            </Link>
+            <Link
+              href="/dashboard"
+              className="block text-center border-2 border-green-200 text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors text-sm mt-3"
+            >
+              Demo Dashboard
             </Link>
           </div>
 

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useBuilderId } from "@/lib/utils/use-builder-id";
 
 interface SMSUsage {
   smsEnabled: boolean;
@@ -12,7 +13,7 @@ interface SMSUsage {
 }
 
 export default function SMSSettingsPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const { builderId } = useBuilderId();
   const [loading, setLoading] = useState(true);
   const [enabling, setEnabling] = useState(false);
   const [usage, setUsage] = useState<SMSUsage | null>(null);
@@ -24,7 +25,7 @@ export default function SMSSettingsPage() {
 
   const fetchUsage = async () => {
     try {
-      const res = await fetch(`/api/builder/sms/usage?builderId=${TEST_BUILDER_ID}`);
+      const res = await fetch(`/api/builder/sms/usage?builderId=${builderId}`);
       const data = await res.json();
       if (data.success) {
         setUsage(data);
@@ -43,7 +44,7 @@ export default function SMSSettingsPage() {
       const res = await fetch("/api/builder/sms/enable", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ builderId: TEST_BUILDER_ID }),
+        body: JSON.stringify({ builderId: builderId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -65,7 +66,7 @@ export default function SMSSettingsPage() {
     setEnabling(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/builder/sms/enable?builderId=${TEST_BUILDER_ID}`, {
+      const res = await fetch(`/api/builder/sms/enable?builderId=${builderId}`, {
         method: "DELETE",
       });
       const data = await res.json();

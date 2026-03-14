@@ -3,55 +3,62 @@ import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAcc
 import { eq, count, and, gte, countDistinct, sql } from "drizzle-orm";
 import Link from "next/link";
 import CalendarFeedButton from "./CalendarFeedButton";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const DEMO_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
 
   try {
-    let builder;
-    try {
+    // Try authenticated builder first, fall back to demo
+    let builder = await getAuthenticatedBuilder();
+
+    if (builder && builder.onboardingStatus !== "completed") {
+      redirect("/builder/onboarding");
+    }
+
+    if (!builder) {
+      // Fallback to demo builder for backwards compatibility
       const builderResults = await db
         .select()
         .from(builders)
-        .where(eq(builders.id, TEST_BUILDER_ID));
-      
-      builder = builderResults[0];
+        .where(eq(builders.id, DEMO_BUILDER_ID));
+
+      builder = builderResults[0] || null;
 
       if (!builder) {
         const [newBuilder] = await db
           .insert(builders)
           .values({
-            id: TEST_BUILDER_ID,
+            id: DEMO_BUILDER_ID,
             companyName: "Demo Construction Co",
             contactName: "John Builder",
             email: "builder@demo.com",
             phone: "555-0100",
+            onboardingStatus: "completed",
           })
           .returning();
         builder = newBuilder;
       }
-    } catch (error) {
-      console.error("Builder query error:", error);
-      throw error;
     }
 
     const totalHomes = await db
       .select({ count: count() })
       .from(homes)
-      .where(eq(homes.builderId, TEST_BUILDER_ID));
+      .where(eq(homes.builderId, builder.id));
 
     const totalSubs = await db
       .select({ count: count() })
       .from(subcontractors)
-      .where(eq(subcontractors.builderId, TEST_BUILDER_ID));
+      .where(eq(subcontractors.builderId, builder.id));
 
     const allRequests = await db
       .select()
       .from(serviceRequests)
       .innerJoin(homes, eq(serviceRequests.homeId, homes.id))
-      .where(eq(homes.builderId, TEST_BUILDER_ID));
+      .where(eq(homes.builderId, builder.id));
 
     const totalRequests = allRequests.length;
     const activeRequests = allRequests.filter(
@@ -122,11 +129,11 @@ export default async function DashboardPage() {
             <p className="text-base font-medium text-slate-600 mb-4">
               Subscribe to your service requests calendar in Google Calendar or Apple Calendar
             </p>
-            <CalendarFeedButton builderId={TEST_BUILDER_ID} entityType="builder" />
+            <CalendarFeedButton builderId={builder.id} entityType="builder" />
           </div>
 
           {/* SMS Usage Summary */}
-          <SMSUsageSection builderId={TEST_BUILDER_ID} />
+          <SMSUsageSection builderId={builder.id} />
 
           {/* Premium Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
