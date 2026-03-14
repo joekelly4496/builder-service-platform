@@ -47,6 +47,14 @@ export const builders = pgTable("builders", {
   slaLowAcknowledgeMinutes: integer("sla_low_acknowledge_minutes").default(7200),
   slaLowScheduleMinutes: integer("sla_low_schedule_minutes").default(14400),
   calendarToken: text("calendar_token").unique(),
+  // SMS / Twilio fields
+  smsEnabled: boolean("sms_enabled").default(false).notNull(),
+  twilioPhoneNumber: text("twilio_phone_number"),
+  twilioPhoneNumberSid: text("twilio_phone_number_sid"),
+  // Stripe Connect fields
+  stripeConnectAccountId: text("stripe_connect_account_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripeSmsSubscriptionItemId: text("stripe_sms_subscription_item_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -165,6 +173,8 @@ export const homeownerAccounts = pgTable("homeowner_accounts", {
   supabaseUserId: text("supabase_user_id").notNull().unique(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   email: text("email").notNull(),
+  phoneNumber: text("phone_number"),
+  smsOptIn: boolean("sms_opt_in").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -258,4 +268,16 @@ export const maintenanceReminders = pgTable("maintenance_reminders", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const smsLogs = pgTable("sms_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  homeId: uuid("home_id").references(() => homes.id),
+  toNumber: text("to_number").notNull(),
+  message: text("message").notNull(),
+  twilioMessageSid: text("twilio_message_sid"),
+  costCents: integer("cost_cents"),
+  status: text("status").default("sent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

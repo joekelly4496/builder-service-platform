@@ -4,6 +4,7 @@ import { maintenanceReminders, maintenanceItems, homes, homeownerAccounts } from
 import { eq, lte, and } from "drizzle-orm";
 import { Resend } from "resend";
 import { createNotification } from "@/lib/notifications/create";
+import { sendSMSToHomeowner } from "@/lib/sms/send";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -103,6 +104,17 @@ export async function GET(req: NextRequest) {
           }
         } catch (notifErr) {
           console.error(`Failed to create in-app notification for reminder ${reminder.id}:`, notifErr);
+        }
+
+        // Send SMS if homeowner has opted in
+        try {
+          await sendSMSToHomeowner({
+            builderId: home.builderId,
+            homeId: home.id,
+            message: `Maintenance Reminder: ${reminder.title} is due for your home at ${home.address}. ${reminder.description || ""}`.trim(),
+          });
+        } catch (smsErr) {
+          console.error(`Failed to send SMS for reminder ${reminder.id}:`, smsErr);
         }
 
         // Advance nextDueDate and record lastReminderSentAt

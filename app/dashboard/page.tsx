@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { serviceRequests, homes, subcontractors, builders } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAccounts } from "@/lib/db/schema";
+import { eq, count, and, gte, countDistinct, sql } from "drizzle-orm";
 import Link from "next/link";
 import CalendarFeedButton from "./CalendarFeedButton";
 
@@ -124,6 +124,9 @@ export default async function DashboardPage() {
             </p>
             <CalendarFeedButton builderId={TEST_BUILDER_ID} entityType="builder" />
           </div>
+
+          {/* SMS Usage Summary */}
+          <SMSUsageSection builderId={TEST_BUILDER_ID} />
 
           {/* Premium Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -335,5 +338,96 @@ function SLAIndicator({ deadline, status }: { deadline: Date; status: string }) 
       {hoursLeft}h remaining
     </span>
   );
+}
+
+async function SMSUsageSection({ builderId }: { builderId: string }) {
+  try {
+    const [builder] = await db
+      .select({
+        smsEnabled: builders.smsEnabled,
+        twilioPhoneNumber: builders.twilioPhoneNumber,
+      })
+      .from(builders)
+      .where(eq(builders.id, builderId))
+      .limit(1);
+
+    if (!builder) return null;
+
+    // Get current month stats
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [messageCount] = await db
+      .select({ count: count() })
+      .from(smsLogs)
+      .where(
+        and(
+          eq(smsLogs.builderId, builderId),
+          gte(smsLogs.createdAt, monthStart),
+          eq(smsLogs.status, "sent")
+        )
+      );
+
+    const homesWithSms = await db
+      .select({ count: countDistinct(homeownerAccounts.homeId) })
+      .from(homeownerAccounts)
+      .innerJoin(homes, eq(homeownerAccounts.homeId, homes.id))
+      .where(
+        and(
+          eq(homes.builderId, builderId),
+          eq(homeownerAccounts.smsOptIn, true)
+        )
+      );
+
+    const activeHomes = homesWithSms[0]?.count ?? 0;
+    const messagesSent = messageCount?.count ?? 0;
+
+    // Calculate estimated monthly cost
+    let estimatedCostCents = 0;
+    if (builder.smsEnabled) {
+      estimatedCostCents = activeHomes <= 3 ? 1000 : 1000 + (activeHomes - 3) * 300;
+    }
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">SMS Notifications</h2>
+            <p className="text-sm font-medium text-slate-600 mt-0.5">
+              {builder.smsEnabled
+                ? `Sending from ${builder.twilioPhoneNumber}`
+                : "Enable SMS to send text notifications to homeowners"}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/sms-settings"
+            className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 border border-slate-300 hover:bg-slate-50 text-slate-700"
+          >
+            {builder.smsEnabled ? "Manage SMS" : "Enable SMS"}
+          </Link>
+        </div>
+
+        {builder.smsEnabled && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-xl border border-blue-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">Messages This Month</p>
+              <p className="text-2xl font-bold text-blue-700">{messagesSent}</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-4 rounded-xl border border-green-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-green-600 mb-1">Homes on SMS</p>
+              <p className="text-2xl font-bold text-green-700">{activeHomes}</p>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-xl border border-amber-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Est. Monthly Cost</p>
+              <p className="text-2xl font-bold text-amber-700">${(estimatedCostCents / 100).toFixed(2)}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  } catch (error) {
+    console.error("SMS usage section error:", error);
+    return null;
+  }
 }
 

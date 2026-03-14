@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emails/send";
 import { getNewMessageEmail } from "@/lib/emails/templates";
 import { createNotification } from "@/lib/notifications/create";
+import { sendSMSToHomeowner } from "@/lib/sms/send";
 
 export async function GET(
   request: Request,
@@ -114,6 +115,17 @@ export async function POST(
         `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`
       );
 
+      // SMS to homeowner for builder message
+      try {
+        await sendSMSToHomeowner({
+          builderId: requestData.home.builderId,
+          homeId: requestData.home.id,
+          message: `New message from ${senderName} about your ${requestData.request.tradeCategory} request: ${message.substring(0, 120)}`,
+        });
+      } catch (smsErr) {
+        console.error("Failed to send message SMS:", smsErr);
+      }
+
       const magicLinkResults = await db
         .select()
         .from(subcontractorMagicLinks)
@@ -170,6 +182,17 @@ export async function POST(
         `New message from ${senderName}`,
         `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`
       );
+
+      // SMS to homeowner for subcontractor message
+      try {
+        await sendSMSToHomeowner({
+          builderId: requestData.home.builderId,
+          homeId: requestData.home.id,
+          message: `New message from ${senderName} about your ${requestData.request.tradeCategory} request: ${message.substring(0, 120)}`,
+        });
+      } catch (smsErr) {
+        console.error("Failed to send message SMS:", smsErr);
+      }
 
     } else if (senderType === "homeowner") {
       console.log("Homeowner sent message - notifying subcontractor");

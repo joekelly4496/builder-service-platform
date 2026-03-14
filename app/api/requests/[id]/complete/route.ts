@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
-import { serviceRequests, serviceRequestAuditLog, homeownerAccounts } from "@/lib/db/schema";
+import { serviceRequests, serviceRequestAuditLog, homeownerAccounts, homes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { createNotification } from "@/lib/notifications/create";
+import { sendSMSToHomeowner } from "@/lib/sms/send";
 
 export async function POST(
   request: Request,
@@ -98,6 +99,25 @@ export async function POST(
       }
     } catch (notifErr) {
       console.error("Failed to create completion notification:", notifErr);
+    }
+
+    // Send SMS notification for completion
+    try {
+      const [homeData] = await db
+        .select({ builderId: homes.builderId })
+        .from(homes)
+        .where(eq(homes.id, existingRequest.homeId))
+        .limit(1);
+
+      if (homeData) {
+        await sendSMSToHomeowner({
+          builderId: homeData.builderId,
+          homeId: existingRequest.homeId,
+          message: `Your ${existingRequest.tradeCategory} service request has been completed.${completionNotes ? ` Notes: ${completionNotes.substring(0, 100)}` : ""} View details in your homeowner portal.`,
+        });
+      }
+    } catch (smsErr) {
+      console.error("Failed to send completion SMS:", smsErr);
     }
 
     console.log("========== COMPLETE REQUEST FINISHED ==========");
