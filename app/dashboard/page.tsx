@@ -129,7 +129,7 @@ export default async function DashboardPage() {
           <SMSUsageSection builderId={TEST_BUILDER_ID} />
 
           {/* Premium Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Link
               href="/dashboard/requests"
               className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-blue-300 hover:-translate-y-1"
@@ -155,6 +155,15 @@ export default async function DashboardPage() {
               <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">👷</div>
               <h3 className="font-bold text-xl mb-2 text-slate-900">Subcontractors</h3>
               <p className="text-slate-600 text-base font-medium">Manage your trade partners</p>
+            </Link>
+
+            <Link
+              href="/dashboard/billing"
+              className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-amber-300 hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">💰</div>
+              <h3 className="font-bold text-xl mb-2 text-slate-900">Billing &amp; Revenue</h3>
+              <p className="text-slate-600 text-base font-medium">Manage billing and track revenue</p>
             </Link>
           </div>
 

@@ -279,5 +279,85 @@ export const smsLogs = pgTable("sms_logs", {
   twilioMessageSid: text("twilio_message_sid"),
   costCents: integer("cost_cents"),
   status: text("status").default("sent"),
+  stripeUsageReported: boolean("stripe_usage_reported").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ==================== BILLING TABLES ====================
+
+export const builderPricing = pgTable("builder_pricing", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull().unique(),
+  portalAccessMonthlyPrice: integer("portal_access_monthly_price").notNull().default(1500), // $15.00 in cents
+  smsAddonMonthlyPrice: integer("sms_addon_monthly_price").notNull().default(1000), // $10.00 in cents
+  perMessagePrice: integer("per_message_price").notNull().default(5), // $0.05 in cents
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "pending",
+  "active",
+  "past_due",
+  "cancelled",
+  "paused",
+]);
+
+export const homeownerSubscriptions = pgTable("homeowner_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  homeownerAccountId: uuid("homeowner_account_id").references(() => homeownerAccounts.id),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePaymentMethodId: text("stripe_payment_method_id"),
+  status: subscriptionStatusEnum("status").notNull().default("pending"),
+  monthlyPriceCents: integer("monthly_price_cents").notNull(),
+  smsAddonEnabled: boolean("sms_addon_enabled").default(false),
+  smsAddonPriceCents: integer("sms_addon_price_cents"),
+  perMessagePriceCents: integer("per_message_price_cents"),
+  billingStartDate: timestamp("billing_start_date").notNull(),
+  billingAnchorDay: integer("billing_anchor_day").notNull(), // day of month (1-28)
+  nextBillingDate: timestamp("next_billing_date"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invoiceStatusEnum = pgEnum("invoice_status", [
+  "draft",
+  "sent",
+  "paid",
+  "overdue",
+  "cancelled",
+  "void",
+]);
+
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  homeId: uuid("home_id").references(() => homes.id).notNull(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  homeownerAccountId: uuid("homeowner_account_id").references(() => homeownerAccounts.id),
+  stripeInvoiceId: text("stripe_invoice_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  status: invoiceStatusEnum("status").notNull().default("draft"),
+  subtotalCents: integer("subtotal_cents").notNull(),
+  platformFeeCents: integer("platform_fee_cents").notNull().default(0),
+  totalCents: integer("total_cents").notNull(),
+  description: text("description"),
+  dueDate: timestamp("due_date"),
+  paidAt: timestamp("paid_at"),
+  paymentUrl: text("payment_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invoiceLineItems = pgTable("invoice_line_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  invoiceId: uuid("invoice_id").references(() => invoices.id).notNull(),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  unitPriceCents: integer("unit_price_cents").notNull(),
+  totalCents: integer("total_cents").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

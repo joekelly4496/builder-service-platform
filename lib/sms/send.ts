@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { smsLogs, builders, homes, homeownerAccounts } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { smsLogs, builders, homes, homeownerAccounts, homeownerSubscriptions } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 interface TwilioMessageResponse {
   sid: string;
@@ -82,7 +82,7 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
     }
 
     // Log successful message — wholesale cost to builder is $0.02/message
-    await db.insert(smsLogs).values({
+    const [logEntry] = await db.insert(smsLogs).values({
       builderId,
       homeId: homeId ?? null,
       toNumber,
@@ -90,7 +90,17 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
       twilioMessageSid: result.sid,
       costCents: 2,
       status: "sent",
-    });
+      stripeUsageReported: false,
+    }).returning();
+
+    // Report metered usage to Stripe immediately for per-message billing
+    if (homeId) {
+      try {
+        await reportSMSUsageToStripe(builderId, homeId, logEntry.id);
+      } catch (usageErr) {
+        console.error("Failed to report SMS usage to Stripe:", usageErr);
+      }
+    }
 
     console.log(`SMS sent to ${toNumber} via builder ${builderId}, SID: ${result.sid}`);
     return { success: true, messageSid: result.sid };
@@ -214,4 +224,71 @@ export async function provisionTwilioNumber(builderId: string): Promise<{ succes
     console.error("Provision Twilio number error:", error);
     return { success: false, error: error.message };
   }
+}
+
+/**
+ * Report a single SMS message as metered usage to Stripe.
+ * Finds the homeowner's subscription and reports 1 unit to the metered price item.
+ */
+async function reportSMSUsageToStripe(builderId: string, homeId: string, smsLogId: string): Promise<void> {
+  // Find the homeowner's subscription with SMS metered billing
+  const [sub] = await db
+    .select()
+    .from(homeownerSubscriptions)
+    .where(
+      and(
+        eq(homeownerSubscriptions.homeId, homeId),
+        eq(homeownerSubscriptions.builderId, builderId),
+        eq(homeownerSubscriptions.status, "active"),
+        eq(homeownerSubscriptions.smsAddonEnabled, true)
+      )
+    )
+    .limit(1);
+
+  if (!sub?.stripeSubscriptionId) return;
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return;
+
+  const authHeader = `Basic ${Buffer.from(`${stripeKey}:`).toString("base64")}`;
+
+  // Fetch subscription items from Stripe to find the metered one
+  const res = await fetch(
+    `https://api.stripe.com/v1/subscription_items?subscription=${sub.stripeSubscriptionId}`,
+    { headers: { Authorization: authHeader } }
+  );
+  const items = await res.json();
+
+  const meteredItem = items.data?.find((item: any) =>
+    item.price?.recurring?.usage_type === "metered"
+  );
+
+  if (!meteredItem) return;
+
+  // Report 1 message usage
+  const usageBody = new URLSearchParams({
+    quantity: "1",
+    action: "increment",
+    timestamp: String(Math.floor(Date.now() / 1000)),
+  });
+
+  await fetch(
+    `https://api.stripe.com/v1/subscription_items/${meteredItem.id}/usage_records`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: usageBody.toString(),
+    }
+  );
+
+  // Mark usage as reported
+  await db
+    .update(smsLogs)
+    .set({ stripeUsageReported: true })
+    .where(eq(smsLogs.id, smsLogId));
+
+  console.log(`Stripe metered usage reported for SMS log ${smsLogId}`);
 }
