@@ -81,14 +81,14 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
       return { success: false, error: result.error_message || "Failed to send SMS" };
     }
 
-    // Log successful message (Twilio charges ~$0.0079/segment, we estimate 1 cent per message)
+    // Log successful message — wholesale cost to builder is $0.02/message
     await db.insert(smsLogs).values({
       builderId,
       homeId: homeId ?? null,
       toNumber,
       message,
       twilioMessageSid: result.sid,
-      costCents: 1,
+      costCents: 2,
       status: "sent",
     });
 

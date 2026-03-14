@@ -56,14 +56,11 @@ export async function GET(request: NextRequest) {
 
     const activeHomes = homesWithSms[0]?.count ?? 0;
 
-    // Calculate estimated cost: $10/mo minimum covers 3 homes, then $3/home/month
+    // Calculate estimated wholesale cost: $5/home/month + $0.02/message
+    const messagesSent = messageCount?.count ?? 0;
     let estimatedCostCents = 0;
     if (builder.smsEnabled) {
-      if (activeHomes <= 3) {
-        estimatedCostCents = 1000; // $10 minimum
-      } else {
-        estimatedCostCents = 1000 + (activeHomes - 3) * 300; // $10 + $3 per additional home
-      }
+      estimatedCostCents = (activeHomes * 500) + (messagesSent * 2); // $5/home + $0.02/message
     }
 
     // Total cost from actual message logs this month

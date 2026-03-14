@@ -382,10 +382,10 @@ async function SMSUsageSection({ builderId }: { builderId: string }) {
     const activeHomes = homesWithSms[0]?.count ?? 0;
     const messagesSent = messageCount?.count ?? 0;
 
-    // Calculate estimated monthly cost
+    // Calculate estimated wholesale cost: $5/home/month + $0.02/message
     let estimatedCostCents = 0;
     if (builder.smsEnabled) {
-      estimatedCostCents = activeHomes <= 3 ? 1000 : 1000 + (activeHomes - 3) * 300;
+      estimatedCostCents = (activeHomes * 500) + (messagesSent * 2); // $5/home + $0.02/msg
     }
 
     return (

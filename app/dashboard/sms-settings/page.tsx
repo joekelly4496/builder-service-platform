@@ -169,18 +169,19 @@ export default function SMSSettingsPage() {
 
         {/* Pricing Info */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Pricing</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-4">Your Wholesale Cost</h2>
+          <p className="text-sm text-slate-500 mb-4">This is what Homefront charges you. You set your own retail prices to homeowners.</p>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-slate-100">
-              <span className="text-slate-700 font-medium">Base plan (covers up to 3 homes)</span>
-              <span className="font-bold text-slate-900">$10/month</span>
+              <span className="text-slate-700 font-medium">Per home with SMS enabled</span>
+              <span className="font-bold text-slate-900">$5/month</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-slate-100">
-              <span className="text-slate-700 font-medium">Each additional home</span>
-              <span className="font-bold text-slate-900">$3/month</span>
+              <span className="text-slate-700 font-medium">Per message sent</span>
+              <span className="font-bold text-slate-900">$0.02</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-slate-700 font-medium">Your estimated cost</span>
+              <span className="text-slate-700 font-medium">Your estimated monthly cost</span>
               <span className="font-bold text-blue-600 text-lg">
                 ${((usage?.estimatedMonthlyCostCents ?? 0) / 100).toFixed(2)}/month
               </span>
