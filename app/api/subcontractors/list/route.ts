@@ -2,10 +2,11 @@ import { db } from "@/lib/db";
 import { subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export async function GET() {
   try {
-    const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+    const builderId = await getBuilderId();
 
     const allSubs = await db
       .select({
@@ -15,7 +16,7 @@ export async function GET() {
         tradeCategories: subcontractors.tradeCategories,
       })
       .from(subcontractors)
-      .where(eq(subcontractors.builderId, TEST_BUILDER_ID));
+      .where(eq(subcontractors.builderId, builderId));
 
     return NextResponse.json({ success: true, data: allSubs });
   } catch (error: any) {

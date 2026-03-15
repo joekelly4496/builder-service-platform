@@ -9,8 +9,6 @@ import { redirect } from "next/navigation";
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const DEMO_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
-
   try {
     // Try authenticated builder first, fall back to demo
     let builder = await getAuthenticatedBuilder();
@@ -21,27 +19,14 @@ export default async function DashboardPage() {
 
     if (!builder) {
       // Fallback to demo builder for backwards compatibility
+      const { getBuilderId } = await import("@/lib/utils/get-builder-id");
+      const builderId = await getBuilderId();
       const builderResults = await db
         .select()
         .from(builders)
-        .where(eq(builders.id, DEMO_BUILDER_ID));
+        .where(eq(builders.id, builderId));
 
       builder = builderResults[0] || null;
-
-      if (!builder) {
-        const [newBuilder] = await db
-          .insert(builders)
-          .values({
-            id: DEMO_BUILDER_ID,
-            companyName: "Demo Construction Co",
-            contactName: "John Builder",
-            email: "builder@demo.com",
-            phone: "555-0100",
-            onboardingStatus: "completed",
-          })
-          .returning();
-        builder = newBuilder;
-      }
     }
 
     const totalHomes = await db

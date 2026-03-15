@@ -1,19 +1,19 @@
 import { db } from "@/lib/db";
 import { homes } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { address, city, state, zipCode, homeownerName, homeownerEmail, homeownerPhone } = body;
 
-    // For now, hardcode the test builder ID
-    const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+    const builderId = await getBuilderId();
 
     const [home] = await db
       .insert(homes)
       .values({
-        builderId: TEST_BUILDER_ID,
+        builderId,
         address,
         city,
         state,
