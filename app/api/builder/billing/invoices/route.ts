@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       .where(and(eq(homeownerSubscriptions.homeId, homeId), eq(homeownerSubscriptions.builderId, builderId)))
       .limit(1);
 
-    let stripeCustomerId = sub?.stripeCustomerId;
+    let stripeCustomerId = sub?.stripeCustomerId ?? "";
 
     if (!stripeCustomerId) {
       const customer = await stripeRequest("/customers", "POST", {
