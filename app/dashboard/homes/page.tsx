@@ -3,10 +3,13 @@ import { homes, homeTradeAssignments, subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import LinkHomeownerButton from "./LinkHomeownerButton";
-import { getBuilderId } from "@/lib/utils/get-builder-id";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { redirect } from "next/navigation";
 
 export default async function HomesPage() {
-  const builderId = await getBuilderId();
+  const builder = await getAuthenticatedBuilder();
+  if (!builder) redirect("/builder/login");
+  const builderId = builder.id;
 
   const allHomes = await db
     .select()

@@ -10,23 +10,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   try {
-    // Try authenticated builder first, fall back to demo
-    let builder = await getAuthenticatedBuilder();
-
-    if (builder && builder.onboardingStatus !== "completed") {
-      redirect("/builder/onboarding");
-    }
+    const builder = await getAuthenticatedBuilder();
 
     if (!builder) {
-      // Fallback to demo builder for backwards compatibility
-      const { getBuilderId } = await import("@/lib/utils/get-builder-id");
-      const builderId = await getBuilderId();
-      const builderResults = await db
-        .select()
-        .from(builders)
-        .where(eq(builders.id, builderId));
+      redirect("/builder/login");
+    }
 
-      builder = builderResults[0] || null;
+    if (builder.onboardingStatus !== "completed") {
+      redirect("/builder/onboarding");
     }
 
     const totalHomes = await db

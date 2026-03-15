@@ -1,14 +1,18 @@
 import { db } from "@/lib/db";
 import { subcontractors, homeTradeAssignments } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
-import { getBuilderId } from "@/lib/utils/get-builder-id";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { companyName, contactName, email, phone, tradeCategories, homeAssignments } = body;
 
-    const builderId = await getBuilderId();
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const builderId = builder.id;
 
     // Create the subcontractor
     const [subcontractor] = await db
