@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
         await resend.emails.send({
           from:
             process.env.EMAIL_FROM ||
-            "Maintenance <notifications@yourdomain.com>",
+            "HomeFront Maintenance <notifications@thenaturalbeautymedspa.com>",
           to: homeownerEmail,
           subject: `Maintenance Reminder: ${reminder.title}`,
           html: `

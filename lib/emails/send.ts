@@ -16,7 +16,7 @@ interface EmailParams {
 
 export function sendEmail(params: EmailParams) {
   const emailData: any = {
-    from: "Construction Platform <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM || "HomeFront <notifications@thenaturalbeautymedspa.com>",
     to: params.to,
     subject: params.subject,
     html: params.html,
