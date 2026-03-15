@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const type = requestUrl.searchParams.get("type");
 
   if (code) {
     const cookieStore = await cookies();
@@ -27,5 +28,13 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(new URL("/homeowner/reset-password", request.url));
+  // Redirect based on user type
+  const redirectMap: Record<string, string> = {
+    builder: "/builder/onboarding",
+    homeowner: "/homeowner/dashboard",
+    sub: "/sub/dashboard",
+  };
+
+  const redirectPath = redirectMap[type ?? ""] ?? "/homeowner/dashboard";
+  return NextResponse.redirect(new URL(redirectPath, request.url));
 }
