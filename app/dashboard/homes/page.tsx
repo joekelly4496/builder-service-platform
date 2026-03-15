@@ -3,14 +3,15 @@ import { homes, homeTradeAssignments, subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import LinkHomeownerButton from "./LinkHomeownerButton";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export default async function HomesPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const builderId = await getBuilderId();
 
   const allHomes = await db
     .select()
     .from(homes)
-    .where(eq(homes.builderId, TEST_BUILDER_ID));
+    .where(eq(homes.builderId, builderId));
 
   const homeAssignments = await Promise.all(
     allHomes.map(async (home) => {

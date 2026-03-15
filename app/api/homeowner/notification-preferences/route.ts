@@ -140,6 +140,15 @@ export async function PUT(request: Request) {
       });
     }
 
+    // Sync phone number and SMS opt-in to homeownerAccounts for SMS delivery
+    await db
+      .update(homeownerAccounts)
+      .set({
+        phoneNumber: prefs.phoneNumber ?? null,
+        smsOptIn: prefs.smsEnabled ?? false,
+      })
+      .where(eq(homeownerAccounts.id, account.id));
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Update preferences error:", error);

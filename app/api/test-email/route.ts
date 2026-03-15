@@ -10,10 +10,10 @@ export async function GET() {
 
   try {
     const result = await resend.emails.send({
-      from: "onboarding@resend.dev", // Use Resend's test domain
-      to: "joekelly4496@gmail.com", // Your email
-      subject: "Test Email from Construction Platform",
-      html: "<h1>Hello!</h1><p>This is a test email from your construction platform.</p>",
+      from: process.env.EMAIL_FROM || "HomeFront <notifications@thenaturalbeautymedspa.com>",
+      to: "joekelly4496@gmail.com",
+      subject: "Test Email from HomeFront",
+      html: "<h1>Hello!</h1><p>This is a test email from HomeFront.</p>",
     });
 
     console.log("Email sent! Result:", result);

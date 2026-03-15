@@ -1,57 +1,49 @@
 import { db } from "@/lib/db";
-import { serviceRequests, homes, subcontractors, builders } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAccounts } from "@/lib/db/schema";
+import { eq, count, and, gte, countDistinct, sql } from "drizzle-orm";
 import Link from "next/link";
 import CalendarFeedButton from "./CalendarFeedButton";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
-
   try {
-    let builder;
-    try {
+    // Try authenticated builder first, fall back to demo
+    let builder = await getAuthenticatedBuilder();
+
+    if (builder && builder.onboardingStatus !== "completed") {
+      redirect("/builder/onboarding");
+    }
+
+    if (!builder) {
+      // Fallback to demo builder for backwards compatibility
+      const { getBuilderId } = await import("@/lib/utils/get-builder-id");
+      const builderId = await getBuilderId();
       const builderResults = await db
         .select()
         .from(builders)
-        .where(eq(builders.id, TEST_BUILDER_ID));
-      
-      builder = builderResults[0];
+        .where(eq(builders.id, builderId));
 
-      if (!builder) {
-        const [newBuilder] = await db
-          .insert(builders)
-          .values({
-            id: TEST_BUILDER_ID,
-            companyName: "Demo Construction Co",
-            contactName: "John Builder",
-            email: "builder@demo.com",
-            phone: "555-0100",
-          })
-          .returning();
-        builder = newBuilder;
-      }
-    } catch (error) {
-      console.error("Builder query error:", error);
-      throw error;
+      builder = builderResults[0] || null;
     }
 
     const totalHomes = await db
       .select({ count: count() })
       .from(homes)
-      .where(eq(homes.builderId, TEST_BUILDER_ID));
+      .where(eq(homes.builderId, builder.id));
 
     const totalSubs = await db
       .select({ count: count() })
       .from(subcontractors)
-      .where(eq(subcontractors.builderId, TEST_BUILDER_ID));
+      .where(eq(subcontractors.builderId, builder.id));
 
     const allRequests = await db
       .select()
       .from(serviceRequests)
       .innerJoin(homes, eq(serviceRequests.homeId, homes.id))
-      .where(eq(homes.builderId, TEST_BUILDER_ID));
+      .where(eq(homes.builderId, builder.id));
 
     const totalRequests = allRequests.length;
     const activeRequests = allRequests.filter(
@@ -122,11 +114,14 @@ export default async function DashboardPage() {
             <p className="text-base font-medium text-slate-600 mb-4">
               Subscribe to your service requests calendar in Google Calendar or Apple Calendar
             </p>
-            <CalendarFeedButton builderId={TEST_BUILDER_ID} entityType="builder" />
+            <CalendarFeedButton builderId={builder.id} entityType="builder" />
           </div>
 
+          {/* SMS Usage Summary */}
+          <SMSUsageSection builderId={builder.id} />
+
           {/* Premium Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Link
               href="/dashboard/requests"
               className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-blue-300 hover:-translate-y-1"
@@ -152,6 +147,15 @@ export default async function DashboardPage() {
               <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">👷</div>
               <h3 className="font-bold text-xl mb-2 text-slate-900">Subcontractors</h3>
               <p className="text-slate-600 text-base font-medium">Manage your trade partners</p>
+            </Link>
+
+            <Link
+              href="/dashboard/billing"
+              className="group bg-white p-7 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200/60 hover:border-amber-300 hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">💰</div>
+              <h3 className="font-bold text-xl mb-2 text-slate-900">Billing &amp; Revenue</h3>
+              <p className="text-slate-600 text-base font-medium">Manage billing and track revenue</p>
             </Link>
           </div>
 
@@ -335,5 +339,96 @@ function SLAIndicator({ deadline, status }: { deadline: Date; status: string }) 
       {hoursLeft}h remaining
     </span>
   );
+}
+
+async function SMSUsageSection({ builderId }: { builderId: string }) {
+  try {
+    const [builder] = await db
+      .select({
+        smsEnabled: builders.smsEnabled,
+        twilioPhoneNumber: builders.twilioPhoneNumber,
+      })
+      .from(builders)
+      .where(eq(builders.id, builderId))
+      .limit(1);
+
+    if (!builder) return null;
+
+    // Get current month stats
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [messageCount] = await db
+      .select({ count: count() })
+      .from(smsLogs)
+      .where(
+        and(
+          eq(smsLogs.builderId, builderId),
+          gte(smsLogs.createdAt, monthStart),
+          eq(smsLogs.status, "sent")
+        )
+      );
+
+    const homesWithSms = await db
+      .select({ count: countDistinct(homeownerAccounts.homeId) })
+      .from(homeownerAccounts)
+      .innerJoin(homes, eq(homeownerAccounts.homeId, homes.id))
+      .where(
+        and(
+          eq(homes.builderId, builderId),
+          eq(homeownerAccounts.smsOptIn, true)
+        )
+      );
+
+    const activeHomes = homesWithSms[0]?.count ?? 0;
+    const messagesSent = messageCount?.count ?? 0;
+
+    // Calculate estimated wholesale cost: $5/home/month + $0.02/message
+    let estimatedCostCents = 0;
+    if (builder.smsEnabled) {
+      estimatedCostCents = (activeHomes * 500) + (messagesSent * 2); // $5/home + $0.02/msg
+    }
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">SMS Notifications</h2>
+            <p className="text-sm font-medium text-slate-600 mt-0.5">
+              {builder.smsEnabled
+                ? `Sending from ${builder.twilioPhoneNumber}`
+                : "Enable SMS to send text notifications to homeowners"}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/sms-settings"
+            className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 border border-slate-300 hover:bg-slate-50 text-slate-700"
+          >
+            {builder.smsEnabled ? "Manage SMS" : "Enable SMS"}
+          </Link>
+        </div>
+
+        {builder.smsEnabled && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-xl border border-blue-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">Messages This Month</p>
+              <p className="text-2xl font-bold text-blue-700">{messagesSent}</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-4 rounded-xl border border-green-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-green-600 mb-1">Homes on SMS</p>
+              <p className="text-2xl font-bold text-green-700">{activeHomes}</p>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 rounded-xl border border-amber-200/60">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Est. Monthly Cost</p>
+              <p className="text-2xl font-bold text-amber-700">${(estimatedCostCents / 100).toFixed(2)}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  } catch (error) {
+    console.error("SMS usage section error:", error);
+    return null;
+  }
 }
 

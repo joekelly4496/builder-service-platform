@@ -6,6 +6,7 @@ import { sendEmail } from "@/lib/emails/send";
 import { getScheduleConfirmationEmail } from "@/lib/emails/templates";
 import { formatICSDate, escapeICSText } from "@/lib/utils/calendar";
 import { createNotification } from "@/lib/notifications/create";
+import { sendSMSToHomeowner } from "@/lib/sms/send";
 
 export async function POST(
   request: Request,
@@ -124,6 +125,19 @@ END:VCALENDAR`;
       }
     } catch (notifErr) {
       console.error("Failed to create schedule notification:", notifErr);
+    }
+
+    // Send SMS notification for schedule confirmation
+    try {
+      const schedDate = new Date(scheduledFor).toLocaleDateString();
+      const schedTime = new Date(scheduledFor).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      await sendSMSToHomeowner({
+        builderId: requestData.home.builderId,
+        homeId: requestData.home.id,
+        message: `Your ${requestData.request.tradeCategory} service has been scheduled for ${schedDate} at ${schedTime}. ${requestData.subcontractor.companyName} will be at ${requestData.home.address}.`,
+      });
+    } catch (smsErr) {
+      console.error("Failed to send schedule SMS:", smsErr);
     }
 
     return NextResponse.json({ success: true });

@@ -1,19 +1,20 @@
 import { db } from "@/lib/db";
 import { subcontractors, homeTradeAssignments } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { companyName, contactName, email, phone, tradeCategories, homeAssignments } = body;
 
-    const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+    const builderId = await getBuilderId();
 
     // Create the subcontractor
     const [subcontractor] = await db
       .insert(subcontractors)
       .values({
-        builderId: TEST_BUILDER_ID,
+        builderId,
         companyName,
         contactName,
         email,

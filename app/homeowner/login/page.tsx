@@ -30,7 +30,13 @@ export default function HomeownerLoginPage() {
         if (error) throw error;
         setMessage("Password reset email sent! Check your inbox.");
       } else if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?type=homeowner`,
+          },
+        });
         if (error) throw error;
         setMessage("Check your email to confirm your account, then log in!");
       } else {

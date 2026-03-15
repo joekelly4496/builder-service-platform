@@ -3,16 +3,17 @@ import { subcontractors, serviceRequests, homes, homeTradeAssignments } from "@/
 import { eq, count, and } from "drizzle-orm";
 import Link from "next/link";
 import LinkSubcontractorButton from "./LinkSubcontractorButton";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export const dynamic = "force-dynamic";
 
 export default async function SubcontractorsPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const builderId = await getBuilderId();
 
   const allSubs = await db
     .select()
     .from(subcontractors)
-    .where(eq(subcontractors.builderId, TEST_BUILDER_ID))
+    .where(eq(subcontractors.builderId, builderId))
     .orderBy(subcontractors.companyName);
 
   const subMetrics = await Promise.all(

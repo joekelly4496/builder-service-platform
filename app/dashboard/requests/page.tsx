@@ -2,9 +2,10 @@ import { db } from "@/lib/db";
 import { serviceRequests, homes, subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { getBuilderId } from "@/lib/utils/get-builder-id";
 
 export default async function RequestsPage() {
-  const TEST_BUILDER_ID = "75c73c79-029b-44a0-a9e3-4d6366ac141d";
+  const builderId = await getBuilderId();
 
   const allRequests = await db
     .select({
@@ -15,7 +16,7 @@ export default async function RequestsPage() {
     .from(serviceRequests)
     .innerJoin(homes, eq(serviceRequests.homeId, homes.id))
     .innerJoin(subcontractors, eq(serviceRequests.assignedSubcontractorId, subcontractors.id))
-    .where(eq(homes.builderId, TEST_BUILDER_ID))
+    .where(eq(homes.builderId, builderId))
     .orderBy(serviceRequests.createdAt);
 
   return (
