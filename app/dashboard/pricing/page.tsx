@@ -19,6 +19,10 @@ export default function PricingSettingsPage() {
     perMessagePrice: 5,
   });
   const [message, setMessage] = useState("");
+  // Separate display strings so the user can freely clear/type without snapping back
+  const [portalDisplay, setPortalDisplay] = useState("");
+  const [smsDisplay, setSmsDisplay] = useState("");
+  const [messageDisplay, setMessageDisplay] = useState("");
 
   useEffect(() => {
     fetchPricing();
@@ -34,6 +38,9 @@ export default function PricingSettingsPage() {
           smsAddonMonthlyPrice: data.pricing.smsAddonMonthlyPrice,
           perMessagePrice: data.pricing.perMessagePrice,
         });
+        setPortalDisplay((data.pricing.portalAccessMonthlyPrice / 100).toFixed(2));
+        setSmsDisplay((data.pricing.smsAddonMonthlyPrice / 100).toFixed(2));
+        setMessageDisplay((data.pricing.perMessagePrice / 100).toFixed(2));
       }
     } catch (err) {
       console.error("Failed to fetch pricing:", err);
@@ -66,7 +73,19 @@ export default function PricingSettingsPage() {
   };
 
   const centsToDisplay = (cents: number) => (cents / 100).toFixed(2);
-  const displayToCents = (val: string) => Math.round(parseFloat(val || "0") * 100);
+
+  const handlePriceChange = (
+    value: string,
+    setDisplay: (v: string) => void,
+    field: keyof PricingData
+  ) => {
+    // Allow empty string, digits, and up to 2 decimal places
+    if (/^\d*\.?\d{0,2}$/.test(value) || value === "") {
+      setDisplay(value);
+      const cents = value === "" ? 0 : Math.round(parseFloat(value) * 100);
+      setPricing(p => ({ ...p, [field]: isNaN(cents) ? 0 : cents }));
+    }
+  };
 
   if (loading) {
     return (
@@ -112,8 +131,8 @@ export default function PricingSettingsPage() {
             <input
               type="text"
               inputMode="decimal"
-              value={centsToDisplay(pricing.portalAccessMonthlyPrice)}
-              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, portalAccessMonthlyPrice: displayToCents(v) })); }}
+              value={portalDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setPortalDisplay, "portalAccessMonthlyPrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
@@ -129,8 +148,8 @@ export default function PricingSettingsPage() {
             <input
               type="text"
               inputMode="decimal"
-              value={centsToDisplay(pricing.smsAddonMonthlyPrice)}
-              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, smsAddonMonthlyPrice: displayToCents(v) })); }}
+              value={smsDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setSmsDisplay, "smsAddonMonthlyPrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
@@ -146,8 +165,8 @@ export default function PricingSettingsPage() {
             <input
               type="text"
               inputMode="decimal"
-              value={centsToDisplay(pricing.perMessagePrice)}
-              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, perMessagePrice: displayToCents(v) })); }}
+              value={messageDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setMessageDisplay, "perMessagePrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ message</span>
