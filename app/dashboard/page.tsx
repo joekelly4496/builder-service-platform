@@ -9,17 +9,19 @@ import { redirect } from "next/navigation";
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
+  // Auth checks MUST be outside try/catch — redirect() throws internally
+  // and would be swallowed by the catch block
+  const builder = await getAuthenticatedBuilder();
+
+  if (!builder) {
+    redirect("/builder/login");
+  }
+
+  if (builder.onboardingStatus !== "completed") {
+    redirect("/builder/onboarding");
+  }
+
   try {
-    const builder = await getAuthenticatedBuilder();
-
-    if (!builder) {
-      redirect("/builder/login");
-    }
-
-    if (builder.onboardingStatus !== "completed") {
-      redirect("/builder/onboarding");
-    }
-
     const totalHomes = await db
       .select({ count: count() })
       .from(homes)
