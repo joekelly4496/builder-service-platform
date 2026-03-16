@@ -184,7 +184,7 @@ export default function BuilderMaintenancePage() {
                 Add items and schedule automated email reminders for the homeowner
               </p>
             </div>
-            <a href={`/builder/homes/${homeId}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-1">
+            <a href="/dashboard/homes" className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-1">
               ← Back to Home
             </a>
           </div>
