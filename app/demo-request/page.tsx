@@ -87,8 +87,11 @@ export default function DemoRequestPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Submit Service Request
           </h1>
-          <p className="text-gray-600 mb-8">
-            This will create a real service request in your database!
+          <p className="text-gray-600 mb-2">
+            Tell us what you need and we'll get it handled.
+          </p>
+          <p className="text-sm text-gray-500 mb-8">
+            Response times may vary depending on time of day and day of the week. Additional charges may apply for after-hours or emergency service.
           </p>
 
           {error && (
