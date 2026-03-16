@@ -110,11 +110,10 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={centsToDisplay(pricing.portalAccessMonthlyPrice)}
-              onChange={(e) => setPricing(p => ({ ...p, portalAccessMonthlyPrice: displayToCents(e.target.value) }))}
+              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, portalAccessMonthlyPrice: displayToCents(v) })); }}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
@@ -128,11 +127,10 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={centsToDisplay(pricing.smsAddonMonthlyPrice)}
-              onChange={(e) => setPricing(p => ({ ...p, smsAddonMonthlyPrice: displayToCents(e.target.value) }))}
+              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, smsAddonMonthlyPrice: displayToCents(v) })); }}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
@@ -146,11 +144,10 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={centsToDisplay(pricing.perMessagePrice)}
-              onChange={(e) => setPricing(p => ({ ...p, perMessagePrice: displayToCents(e.target.value) }))}
+              onChange={(e) => { const v = e.target.value; if (/^\d*\.?\d{0,2}$/.test(v) || v === "") setPricing(p => ({ ...p, perMessagePrice: displayToCents(v) })); }}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ message</span>
