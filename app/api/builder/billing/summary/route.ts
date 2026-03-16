@@ -83,11 +83,8 @@ export async function GET(request: NextRequest) {
     // Homefront bill to builder: $5/home/month for SMS + $0.02/message
     const homefrontSmsCostCents = (smsHomeCount * 500) + (messageCount * 2);
 
-    // Platform fee revenue (10% of homeowner charges)
-    const platformFeeCents = Math.round(mrr * 0.10);
-
-    // Net revenue to builder (90% of MRR + invoice revenue - homefront costs)
-    const netRevenueCents = Math.round(mrr * 0.90) + totalCollectedCents - homefrontSmsCostCents;
+    // Net revenue to builder (MRR + invoice revenue - homefront costs)
+    const netRevenueCents = mrr + totalCollectedCents - homefrontSmsCostCents;
 
     // Per-homeowner breakdown
     const homeownerBreakdown = activeSubs.map(s => ({
@@ -110,7 +107,6 @@ export async function GET(request: NextRequest) {
       invoicesSent,
       invoicesPaid,
       totalCollectedCents,
-      platformFeeCents,
       netRevenueCents,
       // Homefront Bill
       homefrontSmsCostCents,

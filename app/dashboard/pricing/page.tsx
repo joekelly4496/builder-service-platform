@@ -118,7 +118,7 @@ export default function PricingSettingsPage() {
           <p className="text-sm text-blue-800">
             You set your own retail prices below. Homefront charges you a fixed wholesale rate
             ($5/home/month for SMS, $0.02/message). Everything above that is your margin.
-            Stripe Connect handles the split automatically: 90% to you, 10% platform fee on every homeowner transaction.
+            Payments are collected via Stripe Connect and deposited directly to your account.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
-          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $19.99/mo. No wholesale cost — this is pure margin minus the 10% platform fee.</p>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $19.99/mo. No wholesale cost — this is pure margin.</p>
         </div>
 
         {/* SMS Add-on Price */}
@@ -155,7 +155,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
-          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $14.99/mo. Your wholesale cost is $5/mo, so at $9.99 your margin is ~$3.99 after the 10% platform fee.</p>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $14.99/mo. Your wholesale cost is $5/mo, so at $9.99 your margin is $4.99.</p>
         </div>
 
         {/* Per-Message Price */}
@@ -173,7 +173,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ message</span>
           </div>
-          <p className="text-xs text-slate-400 mt-3">Recommended: $0.05 - $0.10/msg. Your wholesale cost is $0.02, so at $0.05 your margin is ~$0.025 after the 10% platform fee.</p>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $0.05 - $0.10/msg. Your wholesale cost is $0.02, so at $0.05 your margin is $0.03.</p>
         </div>
 
         {/* Margin Summary */}
@@ -191,7 +191,7 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.portalAccessMonthlyPrice)}/mo</div>
               <div className="text-right text-slate-500">$0.00/mo</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.portalAccessMonthlyPrice * 0.9))}/mo
+                ${centsToDisplay(pricing.portalAccessMonthlyPrice)}/mo
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-t border-slate-100">
@@ -199,7 +199,7 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.smsAddonMonthlyPrice)}/mo</div>
               <div className="text-right text-slate-500">$5.00/mo</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.smsAddonMonthlyPrice * 0.9) - 500)}/mo
+                ${centsToDisplay(pricing.smsAddonMonthlyPrice - 500)}/mo
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-t border-slate-100">
@@ -207,11 +207,11 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.perMessagePrice)}/msg</div>
               <div className="text-right text-slate-500">$0.02/msg</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.perMessagePrice * 0.9) - 2)}/msg
+                ${centsToDisplay(pricing.perMessagePrice - 2)}/msg
               </div>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mt-4">* 10% platform fee is deducted from your retail price on every transaction via Stripe Connect.</p>
+          <p className="text-xs text-slate-400 mt-4">* Margin = your retail price minus wholesale cost. Standard Stripe processing fees apply.</p>
         </div>
 
         {/* Save */}
