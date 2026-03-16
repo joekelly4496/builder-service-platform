@@ -2,11 +2,15 @@ import { db } from "@/lib/db";
 import { subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { getBuilderId } from "@/lib/utils/get-builder-id";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function GET() {
   try {
-    const builderId = await getBuilderId();
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const builderId = builder.id;
 
     const allSubs = await db
       .select({

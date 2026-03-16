@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
       "payment_settings[save_default_payment_method]": "on_subscription",
       collection_method: "charge_automatically",
       "transfer_data[destination]": builder.stripeConnectAccountId,
-      application_fee_percent: "10",
       "metadata[homeId]": homeId,
       "metadata[builderId]": builderId,
     };

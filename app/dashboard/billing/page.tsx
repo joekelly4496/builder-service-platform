@@ -21,7 +21,6 @@ interface BillingSummary {
   invoicesSent: number;
   invoicesPaid: number;
   totalCollectedCents: number;
-  platformFeeCents: number;
   netRevenueCents: number;
   homefrontSmsCostCents: number;
   smsHomeCount: number;
@@ -132,7 +131,7 @@ export default function BillingDashboard() {
               <div>
                 <h2 className="text-lg font-bold text-amber-900">Connect Your Bank Account</h2>
                 <p className="text-sm text-amber-800 mt-1">
-                  Connect via Stripe Express to receive payments from homeowners. 90% goes directly to you.
+                  Connect via Stripe Express to receive payments from homeowners. No platform fees — only standard Stripe processing fees apply.
                 </p>
               </div>
               <button
@@ -187,7 +186,6 @@ export default function BillingDashboard() {
               <h2 className="text-lg font-bold text-slate-900 mb-4">Revenue Breakdown</h2>
               <div className="space-y-3">
                 <Row label="Gross MRR from Homeowners" value={fmt(summary.mrrCents)} />
-                <Row label="Platform Fee (10%)" value={`-${fmt(summary.platformFeeCents)}`} negative />
                 <Row label="Homefront SMS Costs" value={summary.homefrontSmsCostCents > 0 ? `-${fmt(summary.homefrontSmsCostCents)}` : "$0.00"} negative={summary.homefrontSmsCostCents > 0} />
                 <Row label="One-Time Invoice Revenue" value={fmt(summary.totalCollectedCents)} />
                 <div className="border-t-2 border-slate-200 pt-3">

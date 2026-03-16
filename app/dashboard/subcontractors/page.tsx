@@ -3,12 +3,15 @@ import { subcontractors, serviceRequests, homes, homeTradeAssignments } from "@/
 import { eq, count, and } from "drizzle-orm";
 import Link from "next/link";
 import LinkSubcontractorButton from "./LinkSubcontractorButton";
-import { getBuilderId } from "@/lib/utils/get-builder-id";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function SubcontractorsPage() {
-  const builderId = await getBuilderId();
+  const builder = await getAuthenticatedBuilder();
+  if (!builder) redirect("/builder/login");
+  const builderId = builder.id;
 
   const allSubs = await db
     .select()

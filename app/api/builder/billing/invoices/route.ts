@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
     // Calculate totals
     const items = lineItems as { description: string; quantity: number; unitPriceCents: number }[];
     const subtotalCents = items.reduce((sum, item) => sum + (item.quantity * item.unitPriceCents), 0);
-    const platformFeeCents = Math.round(subtotalCents * 0.10); // 10% platform fee
     const totalCents = subtotalCents;
 
     // Create Stripe invoice
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
       collection_method: "send_invoice",
       days_until_due: dueDate ? String(Math.max(1, Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000))) : "7",
       "transfer_data[destination]": builder.stripeConnectAccountId,
-      application_fee_amount: String(platformFeeCents),
       "metadata[homeId]": homeId,
       "metadata[builderId]": builderId,
       "metadata[type]": "one_time_invoice",
@@ -121,7 +119,7 @@ export async function POST(request: NextRequest) {
       stripeInvoiceId: finalizedInvoice.id,
       status: "sent",
       subtotalCents,
-      platformFeeCents,
+      platformFeeCents: 0,
       totalCents,
       description: description || null,
       dueDate: dueDate ? new Date(dueDate) : null,

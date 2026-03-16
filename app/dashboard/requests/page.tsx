@@ -2,10 +2,13 @@ import { db } from "@/lib/db";
 import { serviceRequests, homes, subcontractors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
-import { getBuilderId } from "@/lib/utils/get-builder-id";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { redirect } from "next/navigation";
 
 export default async function RequestsPage() {
-  const builderId = await getBuilderId();
+  const builder = await getAuthenticatedBuilder();
+  if (!builder) redirect("/builder/login");
+  const builderId = builder.id;
 
   const allRequests = await db
     .select({

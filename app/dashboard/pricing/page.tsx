@@ -19,6 +19,10 @@ export default function PricingSettingsPage() {
     perMessagePrice: 5,
   });
   const [message, setMessage] = useState("");
+  // Separate display strings so the user can freely clear/type without snapping back
+  const [portalDisplay, setPortalDisplay] = useState("");
+  const [smsDisplay, setSmsDisplay] = useState("");
+  const [messageDisplay, setMessageDisplay] = useState("");
 
   useEffect(() => {
     fetchPricing();
@@ -34,6 +38,9 @@ export default function PricingSettingsPage() {
           smsAddonMonthlyPrice: data.pricing.smsAddonMonthlyPrice,
           perMessagePrice: data.pricing.perMessagePrice,
         });
+        setPortalDisplay((data.pricing.portalAccessMonthlyPrice / 100).toFixed(2));
+        setSmsDisplay((data.pricing.smsAddonMonthlyPrice / 100).toFixed(2));
+        setMessageDisplay((data.pricing.perMessagePrice / 100).toFixed(2));
       }
     } catch (err) {
       console.error("Failed to fetch pricing:", err);
@@ -66,7 +73,19 @@ export default function PricingSettingsPage() {
   };
 
   const centsToDisplay = (cents: number) => (cents / 100).toFixed(2);
-  const displayToCents = (val: string) => Math.round(parseFloat(val || "0") * 100);
+
+  const handlePriceChange = (
+    value: string,
+    setDisplay: (v: string) => void,
+    field: keyof PricingData
+  ) => {
+    // Allow empty string, digits, and up to 2 decimal places
+    if (/^\d*\.?\d{0,2}$/.test(value) || value === "") {
+      setDisplay(value);
+      const cents = value === "" ? 0 : Math.round(parseFloat(value) * 100);
+      setPricing(p => ({ ...p, [field]: isNaN(cents) ? 0 : cents }));
+    }
+  };
 
   if (loading) {
     return (
@@ -99,7 +118,7 @@ export default function PricingSettingsPage() {
           <p className="text-sm text-blue-800">
             You set your own retail prices below. Homefront charges you a fixed wholesale rate
             ($5/home/month for SMS, $0.02/message). Everything above that is your margin.
-            Stripe Connect handles the split automatically: 90% to you, 10% platform fee on every homeowner transaction.
+            Payments are collected via Stripe Connect and deposited directly to your account.
           </p>
         </div>
 
@@ -110,15 +129,15 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={centsToDisplay(pricing.portalAccessMonthlyPrice)}
-              onChange={(e) => setPricing(p => ({ ...p, portalAccessMonthlyPrice: displayToCents(e.target.value) }))}
+              type="text"
+              inputMode="decimal"
+              value={portalDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setPortalDisplay, "portalAccessMonthlyPrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $19.99/mo. No wholesale cost — this is pure margin.</p>
         </div>
 
         {/* SMS Add-on Price */}
@@ -128,15 +147,15 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={centsToDisplay(pricing.smsAddonMonthlyPrice)}
-              onChange={(e) => setPricing(p => ({ ...p, smsAddonMonthlyPrice: displayToCents(e.target.value) }))}
+              type="text"
+              inputMode="decimal"
+              value={smsDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setSmsDisplay, "smsAddonMonthlyPrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $14.99/mo. Your wholesale cost is $5/mo, so at $9.99 your margin is $4.99.</p>
         </div>
 
         {/* Per-Message Price */}
@@ -146,15 +165,15 @@ export default function PricingSettingsPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-slate-700">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={centsToDisplay(pricing.perMessagePrice)}
-              onChange={(e) => setPricing(p => ({ ...p, perMessagePrice: displayToCents(e.target.value) }))}
+              type="text"
+              inputMode="decimal"
+              value={messageDisplay}
+              onChange={(e) => handlePriceChange(e.target.value, setMessageDisplay, "perMessagePrice")}
               className="w-32 px-4 py-2.5 border border-slate-300 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <span className="text-sm text-slate-500 font-medium">/ message</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $0.05 - $0.10/msg. Your wholesale cost is $0.02, so at $0.05 your margin is $0.03.</p>
         </div>
 
         {/* Margin Summary */}
@@ -172,7 +191,7 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.portalAccessMonthlyPrice)}/mo</div>
               <div className="text-right text-slate-500">$0.00/mo</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.portalAccessMonthlyPrice * 0.9))}/mo
+                ${centsToDisplay(pricing.portalAccessMonthlyPrice)}/mo
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-t border-slate-100">
@@ -180,7 +199,7 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.smsAddonMonthlyPrice)}/mo</div>
               <div className="text-right text-slate-500">$5.00/mo</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.smsAddonMonthlyPrice * 0.9) - 500)}/mo
+                ${centsToDisplay(pricing.smsAddonMonthlyPrice - 500)}/mo
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-t border-slate-100">
@@ -188,11 +207,11 @@ export default function PricingSettingsPage() {
               <div className="text-right font-bold">${centsToDisplay(pricing.perMessagePrice)}/msg</div>
               <div className="text-right text-slate-500">$0.02/msg</div>
               <div className="text-right font-bold text-green-600">
-                ${centsToDisplay(Math.round(pricing.perMessagePrice * 0.9) - 2)}/msg
+                ${centsToDisplay(pricing.perMessagePrice - 2)}/msg
               </div>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mt-4">* 10% platform fee is deducted from your retail price on every transaction via Stripe Connect.</p>
+          <p className="text-xs text-slate-400 mt-4">* Margin = your retail price minus wholesale cost. Standard Stripe processing fees apply.</p>
         </div>
 
         {/* Save */}
