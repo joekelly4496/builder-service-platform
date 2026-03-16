@@ -131,7 +131,7 @@ export default function BillingDashboard() {
               <div>
                 <h2 className="text-lg font-bold text-amber-900">Connect Your Bank Account</h2>
                 <p className="text-sm text-amber-800 mt-1">
-                  Connect via Stripe Express to receive payments from homeowners. 90% goes directly to you.
+                  Connect via Stripe Express to receive payments from homeowners. 100% of homeowner payments go directly to you.
                 </p>
               </div>
               <button
