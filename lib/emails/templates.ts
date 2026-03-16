@@ -77,7 +77,7 @@ export function getNewRequestEmail({
       priority === "urgent"
         ? `
     <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-      <p style="margin: 0; color: #991b1b; font-size: 14px; font-weight: 700;">⚠️ URGENT: Please acknowledge within 2 hours</p>
+      <p style="margin: 0; color: #991b1b; font-size: 14px; font-weight: 700;">⚠️ URGENT: Please acknowledge within 24 hours</p>
     </div>
     `
         : ""
@@ -110,7 +110,7 @@ PRIORITY: ${priority.toUpperCase()}
 DESCRIPTION:
 ${description}
 
-${priority === "urgent" ? "⚠️ URGENT: Please acknowledge within 2 hours\n\n" : ""}
+${priority === "urgent" ? "⚠️ URGENT: Please acknowledge within 24 hours\n\n" : ""}
 
 View and respond to this request:
 ${magicLink}
@@ -451,7 +451,7 @@ export function getHomeownerConfirmationEmail({
     
     <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
       <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">⏰ What's Next:</p>
-      <p style="margin: 10px 0 0 0; color: #78350f; font-size: 14px;">The contractor will acknowledge your request ${priority === "urgent" ? "within 2 hours" : "within 48 hours"} and schedule an appointment with you.</p>
+      <p style="margin: 10px 0 0 0; color: #78350f; font-size: 14px;">The contractor will acknowledge your request ${priority === "urgent" ? "within 24 hours" : "within 48 hours"} and schedule an appointment with you.</p>
     </div>
     
     <p style="font-size: 13px; color: #64748b; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
@@ -474,7 +474,7 @@ ${description}
 PRIORITY: ${priority.toUpperCase()}
 
 WHAT'S NEXT:
-The contractor will acknowledge your request ${priority === "urgent" ? "within 2 hours" : "within 48 hours"} and schedule an appointment with you.
+The contractor will acknowledge your request ${priority === "urgent" ? "within 24 hours" : "within 48 hours"} and schedule an appointment with you.
 
 Track your request:
 ${magicLink}

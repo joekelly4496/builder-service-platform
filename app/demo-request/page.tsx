@@ -131,7 +131,7 @@ export default function DemoRequestPage() {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="urgent">🔴 Urgent (2 hour response)</option>
+                <option value="urgent">🔴 Urgent (24 hour response)</option>
                 <option value="normal">🟡 Normal (48 hour response)</option>
                 <option value="low">🟢 Low (5 day response)</option>
               </select>
