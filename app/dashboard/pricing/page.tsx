@@ -137,6 +137,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $19.99/mo. No wholesale cost — this is pure margin minus the 10% platform fee.</p>
         </div>
 
         {/* SMS Add-on Price */}
@@ -154,6 +155,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ month per homeowner</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $9.99 - $14.99/mo. Your wholesale cost is $5/mo, so at $9.99 your margin is ~$3.99 after the 10% platform fee.</p>
         </div>
 
         {/* Per-Message Price */}
@@ -171,6 +173,7 @@ export default function PricingSettingsPage() {
             />
             <span className="text-sm text-slate-500 font-medium">/ message</span>
           </div>
+          <p className="text-xs text-slate-400 mt-3">Recommended: $0.05 - $0.10/msg. Your wholesale cost is $0.02, so at $0.05 your margin is ~$0.025 after the 10% platform fee.</p>
         </div>
 
         {/* Margin Summary */}
