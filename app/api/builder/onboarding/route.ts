@@ -130,18 +130,40 @@ export async function POST(request: NextRequest) {
         // Add subcontractors if provided
         if (subsList && subsList.length > 0) {
           for (const sub of subsList) {
-            const [newSub] = await db.insert(subcontractors).values({
-              companyName: sub.companyName,
-              contactName: sub.contactName,
-              email: sub.email,
-              phone: sub.phone || null,
-              tradeCategories: sub.tradeCategories || ["general"],
-            }).returning();
+            // Check if sub with this email already exists (global profile)
+            let subRecord;
+            const [existing] = await db
+              .select()
+              .from(subcontractors)
+              .where(eq(subcontractors.email, sub.email))
+              .limit(1);
 
-            await db.insert(builderSubcontractorRelationships).values({
-              builderId,
-              subcontractorId: newSub.id,
-            });
+            if (existing) {
+              subRecord = existing;
+            } else {
+              const [newSub] = await db.insert(subcontractors).values({
+                companyName: sub.companyName,
+                contactName: sub.contactName,
+                email: sub.email,
+                phone: sub.phone || null,
+                tradeCategories: sub.tradeCategories || ["general"],
+              }).returning();
+              subRecord = newSub;
+            }
+
+            // Create relationship if not already linked
+            const [existingRel] = await db
+              .select()
+              .from(builderSubcontractorRelationships)
+              .where(eq(builderSubcontractorRelationships.subcontractorId, subRecord.id))
+              .limit(1);
+
+            if (!existingRel) {
+              await db.insert(builderSubcontractorRelationships).values({
+                builderId,
+                subcontractorId: subRecord.id,
+              });
+            }
           }
         }
 
