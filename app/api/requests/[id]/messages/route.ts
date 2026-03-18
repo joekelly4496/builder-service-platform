@@ -36,18 +36,7 @@ export async function POST(
     console.log("Request ID:", id);
     console.log("Sender:", senderName, senderType, senderEmail);
     console.log("Message:", message);
-    const [newMessage] = await db
-      .insert(serviceRequestMessages)
-      .values({
-        serviceRequestId: id,
-        senderType,
-        senderName,
-        senderEmail,
-        message,
-      })
-      .returning();
-    console.log("✅ Message created in database:", newMessage.id);
-    console.log("Fetching request details...");
+    // Fetch request details first to get builderId
     const requestDataResults = await db
       .select({
         request: serviceRequests,
@@ -61,9 +50,22 @@ export async function POST(
       .limit(1);
     if (requestDataResults.length === 0) {
       console.log("❌ Request not found!");
-      return NextResponse.json({ success: true, message: newMessage });
+      return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
     const requestData = requestDataResults[0];
+
+    const [newMessage] = await db
+      .insert(serviceRequestMessages)
+      .values({
+        builderId: requestData.request.builderId,
+        serviceRequestId: id,
+        senderType,
+        senderName,
+        senderEmail,
+        message,
+      })
+      .returning();
+    console.log("✅ Message created in database:", newMessage.id);
     console.log("Request found - Home:", requestData.home.address);
     console.log("Homeowner:", requestData.home.homeownerName, requestData.home.homeownerEmail);
     console.log("Subcontractor:", requestData.subcontractor.companyName, requestData.subcontractor.email);

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAccounts } from "@/lib/db/schema";
+import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAccounts, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { eq, count, and, gte, countDistinct, sql } from "drizzle-orm";
 import Link from "next/link";
 import CalendarFeedButton from "./CalendarFeedButton";
@@ -29,8 +29,8 @@ export default async function DashboardPage() {
 
     const totalSubs = await db
       .select({ count: count() })
-      .from(subcontractors)
-      .where(eq(subcontractors.builderId, builder.id));
+      .from(builderSubcontractorRelationships)
+      .where(eq(builderSubcontractorRelationships.builderId, builder.id));
 
     const allRequests = await db
       .select()

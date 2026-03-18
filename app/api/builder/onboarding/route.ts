@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "@/lib/db";
-import { builders, builderAccounts, homes, subcontractors, builderPricing } from "@/lib/db/schema";
+import { builders, builderAccounts, homes, subcontractors, builderPricing, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 const supabase = createClient(
@@ -130,13 +130,17 @@ export async function POST(request: NextRequest) {
         // Add subcontractors if provided
         if (subsList && subsList.length > 0) {
           for (const sub of subsList) {
-            await db.insert(subcontractors).values({
-              builderId,
+            const [newSub] = await db.insert(subcontractors).values({
               companyName: sub.companyName,
               contactName: sub.contactName,
               email: sub.email,
               phone: sub.phone || null,
               tradeCategories: sub.tradeCategories || ["general"],
+            }).returning();
+
+            await db.insert(builderSubcontractorRelationships).values({
+              builderId,
+              subcontractorId: newSub.id,
             });
           }
         }

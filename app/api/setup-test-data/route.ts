@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { builders, homes, subcontractors, homeTradeAssignments } from "@/lib/db/schema";
+import { builders, homes, subcontractors, homeTradeAssignments, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -34,7 +34,6 @@ export async function GET() {
     const [sub] = await db
       .insert(subcontractors)
       .values({
-        builderId: builder.id,
         companyName: "Demo Plumbing LLC",
         contactName: "Mike Plumber",
         email: "plumber@demo.com",
@@ -43,8 +42,15 @@ export async function GET() {
       })
       .returning();
 
+    // Create the builder-subcontractor relationship
+    await db.insert(builderSubcontractorRelationships).values({
+      builderId: builder.id,
+      subcontractorId: sub.id,
+    });
+
     // Assign subcontractor to home for plumbing
     await db.insert(homeTradeAssignments).values({
+      builderId: builder.id,
       homeId: home.id,
       subcontractorId: sub.id,
       tradeCategory: "plumbing",

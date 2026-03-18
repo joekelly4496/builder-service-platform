@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { maintenanceItems, maintenanceReminders } from "@/lib/db/schema";
+import { maintenanceItems, maintenanceReminders, homes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 // GET /api/maintenance-items?homeId=xxx
@@ -65,9 +65,17 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Look up home to get builderId
+    const [home] = await db.select().from(homes).where(eq(homes.id, homeId)).limit(1);
+    if (!home) {
+      return NextResponse.json({ error: "Home not found" }, { status: 404 });
+    }
+
     const [newItem] = await db
       .insert(maintenanceItems)
       .values({
+        builderId: home.builderId,
         homeId,
         name,
         description: description || null,
@@ -89,6 +97,7 @@ export async function POST(req: NextRequest) {
         const [newReminder] = await db
       .insert(maintenanceReminders)
       .values({
+        builderId: home.builderId,
         maintenanceItemId: newItem.id,
         homeId,
         title: reminder.title,

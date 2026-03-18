@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { scheduleApprovals } from "@/lib/db/schema";
+import { scheduleApprovals, serviceRequests } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -16,6 +16,20 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: "Invalid response" },
         { status: 400 }
+      );
+    }
+
+    // Look up service request to get builderId
+    const [serviceRequest] = await db
+      .select()
+      .from(serviceRequests)
+      .where(eq(serviceRequests.id, id))
+      .limit(1);
+
+    if (!serviceRequest) {
+      return NextResponse.json(
+        { success: false, error: "Service request not found" },
+        { status: 404 }
       );
     }
 
@@ -39,6 +53,7 @@ export async function POST(
     } else {
       // Create new record
       await db.insert(scheduleApprovals).values({
+        builderId: serviceRequest.builderId,
         serviceRequestId: id,
         status: response,
         homeownerResponse: response === "approved" ? "Confirmed" : "Requested different time",

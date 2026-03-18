@@ -43,6 +43,7 @@ export async function POST(
       .set(updateData)
       .where(eq(serviceRequests.id, id));
     await db.insert(serviceRequestAuditLog).values({
+      builderId: requestData.request.builderId,
       serviceRequestId: id,
       actorType: "subcontractor",
       actorEmail: requestData.subcontractor.email,

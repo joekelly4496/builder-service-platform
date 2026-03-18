@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { subcontractors } from "@/lib/db/schema";
+import { subcontractors, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
@@ -20,7 +20,11 @@ export async function GET() {
         tradeCategories: subcontractors.tradeCategories,
       })
       .from(subcontractors)
-      .where(eq(subcontractors.builderId, builderId));
+      .innerJoin(
+        builderSubcontractorRelationships,
+        eq(subcontractors.id, builderSubcontractorRelationships.subcontractorId)
+      )
+      .where(eq(builderSubcontractorRelationships.builderId, builderId));
 
     return NextResponse.json({ success: true, data: allSubs });
   } catch (error: any) {

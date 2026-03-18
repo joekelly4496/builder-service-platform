@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { notifications } from "@/lib/db/schema";
+import { notifications, homeownerAccounts } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 type NotificationType =
   | "maintenance_due"
@@ -17,9 +18,21 @@ interface CreateNotificationParams {
 }
 
 export async function createNotification(params: CreateNotificationParams) {
+  // Look up the homeowner account to get builderId
+  const [account] = await db
+    .select({ builderId: homeownerAccounts.builderId })
+    .from(homeownerAccounts)
+    .where(eq(homeownerAccounts.id, params.homeownerId))
+    .limit(1);
+
+  if (!account) {
+    throw new Error(`Homeowner account not found: ${params.homeownerId}`);
+  }
+
   const [notification] = await db
     .insert(notifications)
     .values({
+      builderId: account.builderId,
       homeownerId: params.homeownerId,
       type: params.type,
       title: params.title,

@@ -62,6 +62,7 @@ export async function POST(
     }
 
     await db.insert(serviceRequestRatings).values({
+      builderId: serviceRequest.builderId,
       serviceRequestId: id,
       homeId: serviceRequest.homeId,
       rating,

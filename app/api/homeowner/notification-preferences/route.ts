@@ -122,6 +122,7 @@ export async function PUT(request: Request) {
         .where(eq(notificationPreferences.homeownerId, account.id));
     } else {
       await db.insert(notificationPreferences).values({
+        builderId: account.builderId,
         homeownerId: account.id,
         emailEnabled: prefs.emailEnabled ?? true,
         smsEnabled: prefs.smsEnabled ?? false,

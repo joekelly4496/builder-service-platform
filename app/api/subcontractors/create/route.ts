@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { subcontractors, homeTradeAssignments } from "@/lib/db/schema";
+import { subcontractors, homeTradeAssignments, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
@@ -18,7 +18,6 @@ export async function POST(request: Request) {
     const [subcontractor] = await db
       .insert(subcontractors)
       .values({
-        builderId,
         companyName,
         contactName,
         email,
@@ -28,12 +27,19 @@ export async function POST(request: Request) {
       })
       .returning();
 
+    // Create the builder-subcontractor relationship
+    await db.insert(builderSubcontractorRelationships).values({
+      builderId,
+      subcontractorId: subcontractor.id,
+    });
+
     // Create home assignments if provided
     if (homeAssignments && Object.keys(homeAssignments).length > 0) {
       const assignments = [];
       for (const [homeId, trades] of Object.entries(homeAssignments)) {
         for (const trade of trades as string[]) {
           assignments.push({
+            builderId,
             homeId,
             subcontractorId: subcontractor.id,
             tradeCategory: trade,

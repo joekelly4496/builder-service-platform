@@ -37,6 +37,7 @@ export async function POST(
     // Write audit log (non-blocking if it fails)
     try {
       await db.insert(serviceRequestAuditLog).values({
+        builderId: current.builderId,
         serviceRequestId: id,
         actorType: "builder",
         actorEmail: "builder@demo.com",

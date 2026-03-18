@@ -90,6 +90,7 @@ export async function POST(
   const [newItem] = await db
     .insert(maintenanceItems)
     .values({
+      builderId: auth.builder.id,
       homeId: homeid,
       name,
       description: description || null,
@@ -105,6 +106,7 @@ export async function POST(
   const [newReminder] = await db
     .insert(maintenanceReminders)
     .values({
+      builderId: auth.builder.id,
       maintenanceItemId: newItem.id,
       homeId: homeid,
       title: reminderTitle,

@@ -65,6 +65,7 @@ export async function POST(request: Request) {
 
     // Link account to home
     await db.insert(homeownerAccounts).values({
+      builderId: home.builderId,
       supabaseUserId: user.id,
       homeId,
       email,
