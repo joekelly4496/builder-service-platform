@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { subcontractors, homeTradeAssignments, builderSubcontractorRelationships } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
@@ -14,24 +15,44 @@ export async function POST(request: Request) {
     }
     const builderId = builder.id;
 
-    // Create the subcontractor
-    const [subcontractor] = await db
-      .insert(subcontractors)
-      .values({
-        companyName,
-        contactName,
-        email,
-        phone: phone || null,
-        tradeCategories,
-        status: "active",
-      })
-      .returning();
+    // Check if sub with this email already exists (global profile)
+    let subcontractor;
+    const [existing] = await db
+      .select()
+      .from(subcontractors)
+      .where(eq(subcontractors.email, email))
+      .limit(1);
 
-    // Create the builder-subcontractor relationship
-    await db.insert(builderSubcontractorRelationships).values({
-      builderId,
-      subcontractorId: subcontractor.id,
-    });
+    if (existing) {
+      subcontractor = existing;
+    } else {
+      const [newSub] = await db
+        .insert(subcontractors)
+        .values({
+          companyName,
+          contactName,
+          email,
+          phone: phone || null,
+          tradeCategories,
+          status: "active",
+        })
+        .returning();
+      subcontractor = newSub;
+    }
+
+    // Create the builder-subcontractor relationship (if not already linked)
+    const [existingRel] = await db
+      .select()
+      .from(builderSubcontractorRelationships)
+      .where(eq(builderSubcontractorRelationships.subcontractorId, subcontractor.id))
+      .limit(1);
+
+    if (!existingRel) {
+      await db.insert(builderSubcontractorRelationships).values({
+        builderId,
+        subcontractorId: subcontractor.id,
+      });
+    }
 
     // Create home assignments if provided
     if (homeAssignments && Object.keys(homeAssignments).length > 0) {
