@@ -1,15 +1,12 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import SubActions from "../../[token]/SubActions";
 import SubMessagesSection from "../../[token]/MessagesSection";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createSupabaseBrowserClient();
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
