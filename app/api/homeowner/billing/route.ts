@@ -2,24 +2,15 @@ import { db } from "@/lib/db";
 import { homeownerAccounts, homeownerSubscriptions, invoices } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId");
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId required" }, { status: 400 });
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
-
-    // Get homeowner account
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json({ success: false, error: "Account not found" }, { status: 404 });
-    }
+    const { account } = result;
 
     // Get active subscription
     const [subscription] = await db

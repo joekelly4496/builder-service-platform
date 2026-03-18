@@ -2,14 +2,20 @@ import { db } from "@/lib/db";
 import { homeTradeAssignments, homes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    
+
     const assignments = await db
       .select({
         tradeCategory: homeTradeAssignments.tradeCategory,

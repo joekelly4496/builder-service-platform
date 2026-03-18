@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { maintenanceItems, maintenanceReminders, homes } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 // GET /api/maintenance-items?homeId=xxx
 export async function GET(req: NextRequest) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const homeId = searchParams.get("homeId");
     if (!homeId) {
@@ -17,7 +23,7 @@ export async function GET(req: NextRequest) {
     const items = await db
       .select()
       .from(maintenanceItems)
-      .where(eq(maintenanceItems.homeId, homeId));
+      .where(and(eq(maintenanceItems.homeId, homeId), eq(maintenanceItems.builderId, builder.id)));
     const itemsWithReminders = await Promise.all(
       items.map(async (item) => {
         const reminders = await db

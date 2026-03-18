@@ -2,32 +2,16 @@ import { db } from "@/lib/db";
 import { notificationPreferences, homeownerAccounts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 // GET: Fetch notification preferences
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Missing userId" },
-        { status: 400 }
-      );
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
-
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json(
-        { success: false, error: "Account not found" },
-        { status: 404 }
-      );
-    }
+    const { account } = result;
 
     const [prefs] = await db
       .select()
@@ -68,28 +52,14 @@ export async function GET(request: Request) {
 // PUT: Update notification preferences
 export async function PUT(request: Request) {
   try {
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const { account } = result;
+
     const body = await request.json();
-    const { userId, ...prefs } = body;
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Missing userId" },
-        { status: 400 }
-      );
-    }
-
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json(
-        { success: false, error: "Account not found" },
-        { status: 404 }
-      );
-    }
+    const { ...prefs } = body;
 
     // Check if preferences exist
     const [existing] = await db

@@ -2,13 +2,15 @@ import { db } from "@/lib/db";
 import { homeownerSubscriptions, invoices, homes, smsLogs, homeownerAccounts } from "@/lib/db/schema";
 import { eq, and, gte, count, sql, countDistinct } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const builderId = request.nextUrl.searchParams.get("builderId");
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId required" }, { status: 400 });
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

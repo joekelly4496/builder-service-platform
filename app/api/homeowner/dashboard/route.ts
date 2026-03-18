@@ -2,46 +2,19 @@ import { db } from "@/lib/db";
 import { homeownerAccounts, homes, serviceRequests } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
       return NextResponse.json(
-        { success: false, error: "Missing userId" },
-        { status: 400 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Find homeowner account linked to this Supabase user
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json(
-        { success: false, error: "No home linked to this account. Please contact your builder." },
-        { status: 404 }
-      );
-    }
-
-    // Get home details
-    const [home] = await db
-      .select()
-      .from(homes)
-      .where(eq(homes.id, account.homeId))
-      .limit(1);
-
-    if (!home) {
-      return NextResponse.json(
-        { success: false, error: "Home not found" },
-        { status: 404 }
-      );
-    }
+    const { account, home } = result;
 
     // Get all service requests for this home
     const requests = await db
