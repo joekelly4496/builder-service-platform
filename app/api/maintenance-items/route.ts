@@ -3,15 +3,11 @@ import { db } from "@/lib/db";
 import { maintenanceItems, maintenanceReminders, homes } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 // GET /api/maintenance-items?homeId=xxx
 export async function GET(req: NextRequest) {
   try {
-    const builder = await getAuthenticatedBuilder();
-    if (!builder) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const homeId = searchParams.get("homeId");
     if (!homeId) {
@@ -20,10 +16,35 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
-    const items = await db
-      .select()
-      .from(maintenanceItems)
-      .where(and(eq(maintenanceItems.homeId, homeId), eq(maintenanceItems.builderId, builder.id)));
+
+    // Allow both builder and homeowner auth
+    const builder = await getAuthenticatedBuilder();
+    let authorizedHomeId: string | null = null;
+
+    if (builder) {
+      // Builder can access items they created
+      authorizedHomeId = homeId;
+    } else {
+      // Try homeowner auth — they can only access their own home
+      const homeowner = await getAuthenticatedHomeowner();
+      if (homeowner && homeowner.home.id === homeId) {
+        authorizedHomeId = homeId;
+      }
+    }
+
+    if (!authorizedHomeId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const items = builder
+      ? await db
+          .select()
+          .from(maintenanceItems)
+          .where(and(eq(maintenanceItems.homeId, authorizedHomeId), eq(maintenanceItems.builderId, builder.id)))
+      : await db
+          .select()
+          .from(maintenanceItems)
+          .where(eq(maintenanceItems.homeId, authorizedHomeId));
     const itemsWithReminders = await Promise.all(
       items.map(async (item) => {
         const reminders = await db
