@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { subcontractors, homeTradeAssignments, builderSubcontractorRelationships } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
@@ -40,11 +40,14 @@ export async function POST(request: Request) {
       subcontractor = newSub;
     }
 
-    // Create the builder-subcontractor relationship (if not already linked)
+    // Create the builder-subcontractor relationship (if not already linked for THIS builder)
     const [existingRel] = await db
       .select()
       .from(builderSubcontractorRelationships)
-      .where(eq(builderSubcontractorRelationships.subcontractorId, subcontractor.id))
+      .where(and(
+        eq(builderSubcontractorRelationships.builderId, builderId),
+        eq(builderSubcontractorRelationships.subcontractorId, subcontractor.id),
+      ))
       .limit(1);
 
     if (!existingRel) {
@@ -80,6 +83,6 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("Error creating subcontractor:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to create subcontractor. Please try again." }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "@/lib/db";
 import { builders, builderAccounts, homes, subcontractors, builderPricing, builderSubcontractorRelationships } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -151,11 +151,14 @@ export async function POST(request: NextRequest) {
               subRecord = newSub;
             }
 
-            // Create relationship if not already linked
+            // Create relationship if not already linked for THIS builder
             const [existingRel] = await db
               .select()
               .from(builderSubcontractorRelationships)
-              .where(eq(builderSubcontractorRelationships.subcontractorId, subRecord.id))
+              .where(and(
+                eq(builderSubcontractorRelationships.builderId, builderId),
+                eq(builderSubcontractorRelationships.subcontractorId, subRecord.id),
+              ))
               .limit(1);
 
             if (!existingRel) {
