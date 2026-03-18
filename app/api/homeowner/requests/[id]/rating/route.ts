@@ -2,12 +2,17 @@ import { db } from "@/lib/db";
 import { serviceRequestRatings, serviceRequests } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const homeowner = await getAuthenticatedHomeowner();
+    if (!homeowner) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
     const { id } = await params;
 
     const [rating] = await db
@@ -27,6 +32,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const homeowner = await getAuthenticatedHomeowner();
+    if (!homeowner) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
     const { id } = await params;
     const body = await request.json();
     const { rating, review } = body;
@@ -62,6 +71,7 @@ export async function POST(
     }
 
     await db.insert(serviceRequestRatings).values({
+      builderId: serviceRequest.builderId,
       serviceRequestId: id,
       homeId: serviceRequest.homeId,
       rating,

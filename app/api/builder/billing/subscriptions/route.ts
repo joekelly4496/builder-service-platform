@@ -3,16 +3,18 @@ import { homeownerSubscriptions, homes, builders, builderPricing, homeownerAccou
 import { eq, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { stripeRequest } from "@/lib/stripe/client";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 /**
  * GET: List all homeowner subscriptions for a builder.
  */
 export async function GET(request: NextRequest) {
   try {
-    const builderId = request.nextUrl.searchParams.get("builderId");
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId required" }, { status: 400 });
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
 
     const subs = await db
       .select({
@@ -37,21 +39,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { builderId, homeId, billingStartDate, smsAddonEnabled } = body;
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const builderId = builder.id;
 
-    if (!builderId || !homeId || !billingStartDate) {
-      return NextResponse.json({ success: false, error: "builderId, homeId, and billingStartDate are required" }, { status: 400 });
+    const body = await request.json();
+    const { homeId, billingStartDate, smsAddonEnabled } = body;
+
+    if (!homeId || !billingStartDate) {
+      return NextResponse.json({ success: false, error: "homeId and billingStartDate are required" }, { status: 400 });
     }
 
-    // Get builder + connect account
-    const [builder] = await db
-      .select()
-      .from(builders)
-      .where(eq(builders.id, builderId))
-      .limit(1);
-
-    if (!builder?.stripeConnectAccountId) {
+    if (!builder.stripeConnectAccountId) {
       return NextResponse.json({ success: false, error: "Builder must connect Stripe account first" }, { status: 400 });
     }
 

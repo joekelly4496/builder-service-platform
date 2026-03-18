@@ -2,29 +2,15 @@ import { db } from "@/lib/db";
 import { smsLogs, builders, homes, homeownerAccounts } from "@/lib/db/schema";
 import { eq, and, gte, count, sql, countDistinct } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const builderId = searchParams.get("builderId");
-
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId is required" }, { status: 400 });
-    }
-
-    // Get builder info
-    const [builder] = await db
-      .select({
-        smsEnabled: builders.smsEnabled,
-        twilioPhoneNumber: builders.twilioPhoneNumber,
-      })
-      .from(builders)
-      .where(eq(builders.id, builderId))
-      .limit(1);
-
+    const builder = await getAuthenticatedBuilder();
     if (!builder) {
-      return NextResponse.json({ success: false, error: "Builder not found" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
 
     // Get start of current month
     const now = new Date();

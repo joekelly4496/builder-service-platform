@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { maintenanceItems, maintenanceReminders } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { maintenanceItems, maintenanceReminders, homes } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 // GET /api/maintenance-items?homeId=xxx
 export async function GET(req: NextRequest) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const homeId = searchParams.get("homeId");
     if (!homeId) {
@@ -17,7 +23,7 @@ export async function GET(req: NextRequest) {
     const items = await db
       .select()
       .from(maintenanceItems)
-      .where(eq(maintenanceItems.homeId, homeId));
+      .where(and(eq(maintenanceItems.homeId, homeId), eq(maintenanceItems.builderId, builder.id)));
     const itemsWithReminders = await Promise.all(
       items.map(async (item) => {
         const reminders = await db
@@ -65,9 +71,17 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Look up home to get builderId
+    const [home] = await db.select().from(homes).where(eq(homes.id, homeId)).limit(1);
+    if (!home) {
+      return NextResponse.json({ error: "Home not found" }, { status: 404 });
+    }
+
     const [newItem] = await db
       .insert(maintenanceItems)
       .values({
+        builderId: home.builderId,
         homeId,
         name,
         description: description || null,
@@ -89,6 +103,7 @@ export async function POST(req: NextRequest) {
         const [newReminder] = await db
       .insert(maintenanceReminders)
       .values({
+        builderId: home.builderId,
         maintenanceItemId: newItem.id,
         homeId,
         title: reminder.title,

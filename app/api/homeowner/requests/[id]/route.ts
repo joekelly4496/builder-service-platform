@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { serviceRequests, homes, subcontractors, serviceRequestRatings, scheduleApprovals } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 export async function GET(
   request: Request,
@@ -9,6 +10,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const homeowner = await getAuthenticatedHomeowner();
+    if (!homeowner) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
 
     const [row] = await db
       .select({
@@ -22,6 +28,11 @@ export async function GET(
 
     if (!row) {
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    }
+
+    // Verify this request belongs to the homeowner's home
+    if (row.request.homeId !== homeowner.home.id) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
     const [home] = await db

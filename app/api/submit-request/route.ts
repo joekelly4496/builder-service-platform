@@ -140,6 +140,7 @@ export async function POST(request: Request) {
     const [serviceRequest] = await db
       .insert(serviceRequests)
       .values({
+        builderId: home.builderId,
         homeId,
         assignedSubcontractorId: assignment.subcontractorId,
         tradeCategory,
@@ -156,6 +157,7 @@ export async function POST(request: Request) {
     console.log("✅ Request created:", serviceRequest.id);
 
     await db.insert(serviceRequestAuditLog).values({
+      builderId: home.builderId,
       serviceRequestId: serviceRequest.id,
       actorType: "homeowner",
       actorEmail: homeownerEmail,

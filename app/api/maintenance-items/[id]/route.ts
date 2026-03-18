@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { maintenanceItems, maintenanceReminders } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 // PUT /api/maintenance-items/[id]
 export async function PUT(
@@ -9,6 +10,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { id } = await params;
     const body = await req.json();
     const { name, description, tradeCategory, installedAt, installNotes, reminder } =
@@ -25,7 +30,7 @@ export async function PUT(
       const [result] = await db
         .update(maintenanceItems)
         .set(itemUpdate)
-        .where(eq(maintenanceItems.id, id))
+        .where(and(eq(maintenanceItems.id, id), eq(maintenanceItems.builderId, builder.id)))
         .returning();
       if (!result) {
         return NextResponse.json({ error: "Item not found" }, { status: 404 });
@@ -85,13 +90,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { id } = await params;
     await db
       .delete(maintenanceReminders)
       .where(eq(maintenanceReminders.maintenanceItemId, id));
     const [deleted] = await db
       .delete(maintenanceItems)
-      .where(eq(maintenanceItems.id, id))
+      .where(and(eq(maintenanceItems.id, id), eq(maintenanceItems.builderId, builder.id)))
       .returning();
     if (!deleted) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });

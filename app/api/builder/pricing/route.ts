@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { builderPricing } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 const DEFAULTS = {
   portalAccessMonthlyPrice: 1500, // $15.00
@@ -11,10 +12,11 @@ const DEFAULTS = {
 
 export async function GET(request: NextRequest) {
   try {
-    const builderId = request.nextUrl.searchParams.get("builderId");
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId required" }, { status: 400 });
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
 
     const [pricing] = await db
       .select()
@@ -34,12 +36,14 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { builderId, portalAccessMonthlyPrice, smsAddonMonthlyPrice, perMessagePrice } = body;
-
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId required" }, { status: 400 });
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
+
+    const body = await request.json();
+    const { portalAccessMonthlyPrice, smsAddonMonthlyPrice, perMessagePrice } = body;
 
     const now = new Date();
 

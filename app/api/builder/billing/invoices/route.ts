@@ -4,16 +4,18 @@ import { eq, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { stripeRequest } from "@/lib/stripe/client";
 import { sendEmail } from "@/lib/emails/send";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 /**
  * GET: List invoices for a builder.
  */
 export async function GET(request: NextRequest) {
   try {
-    const builderId = request.nextUrl.searchParams.get("builderId");
-    if (!builderId) {
-      return NextResponse.json({ success: false, error: "builderId required" }, { status: 400 });
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const builderId = builder.id;
 
     const allInvoices = await db
       .select({
@@ -37,15 +39,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { builderId, homeId, description, lineItems, dueDate } = body;
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const builderId = builder.id;
 
-    if (!builderId || !homeId || !lineItems?.length) {
-      return NextResponse.json({ success: false, error: "builderId, homeId, and lineItems required" }, { status: 400 });
+    const body = await request.json();
+    const { homeId, description, lineItems, dueDate } = body;
+
+    if (!homeId || !lineItems?.length) {
+      return NextResponse.json({ success: false, error: "homeId and lineItems required" }, { status: 400 });
     }
 
-    const [builder] = await db.select().from(builders).where(eq(builders.id, builderId)).limit(1);
-    if (!builder?.stripeConnectAccountId) {
+    if (!builder.stripeConnectAccountId) {
       return NextResponse.json({ success: false, error: "Builder must connect Stripe first" }, { status: 400 });
     }
 

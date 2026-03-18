@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { subcontractors, serviceRequests, homes, homeTradeAssignments } from "@/lib/db/schema";
+import { subcontractors, serviceRequests, homes, homeTradeAssignments, builderSubcontractorRelationships } from "@/lib/db/schema";
 import { eq, count, and } from "drizzle-orm";
 import Link from "next/link";
 import LinkSubcontractorButton from "./LinkSubcontractorButton";
@@ -13,11 +13,17 @@ export default async function SubcontractorsPage() {
   if (!builder) redirect("/builder/login");
   const builderId = builder.id;
 
-  const allSubs = await db
+  const allSubResults = await db
     .select()
     .from(subcontractors)
-    .where(eq(subcontractors.builderId, builderId))
+    .innerJoin(
+      builderSubcontractorRelationships,
+      eq(subcontractors.id, builderSubcontractorRelationships.subcontractorId)
+    )
+    .where(eq(builderSubcontractorRelationships.builderId, builderId))
     .orderBy(subcontractors.companyName);
+
+  const allSubs = allSubResults.map((r) => r.subcontractors);
 
   const subMetrics = await Promise.all(
     allSubs.map(async (sub) => {

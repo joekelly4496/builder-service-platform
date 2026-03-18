@@ -66,6 +66,7 @@ export async function POST(
       .where(eq(serviceRequests.id, id));
     console.log("✅ Request marked complete in database");
     await db.insert(serviceRequestAuditLog).values({
+      builderId: existingRequest.builderId,
       serviceRequestId: id,
       actorType: "subcontractor",
       actorEmail: null,

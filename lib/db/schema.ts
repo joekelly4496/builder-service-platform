@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, boolean, varchar } from "drizzle-orm/pg-core";
 
 export const statusEnum = pgEnum("status", [
   "submitted",
@@ -33,12 +33,52 @@ export const actorTypeEnum = pgEnum("actor_type", [
   "system",
 ]);
 
+export const planTierEnum = pgEnum("plan_tier", [
+  "intro",
+  "starter",
+  "growth",
+  "pro",
+]);
+
+export const staffRoleEnum = pgEnum("staff_role", [
+  "owner",
+  "admin",
+  "manager",
+  "field_tech",
+]);
+
+export const billingRecordTypeEnum = pgEnum("billing_record_type", [
+  "subscription",
+  "usage",
+  "payment",
+  "refund",
+  "credit",
+]);
+
+export const builderSubRelationshipStatusEnum = pgEnum("builder_sub_relationship_status", [
+  "invited",
+  "active",
+  "paused",
+  "removed",
+]);
+
 export const builders = pgTable("builders", {
   id: uuid("id").primaryKey().defaultRandom(),
   companyName: text("company_name").notNull(),
   contactName: text("contact_name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone"),
+  // Multi-tenancy fields
+  slug: varchar("slug", { length: 100 }).unique(),
+  planTier: planTierEnum("plan_tier").default("intro"),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  brandingConfig: jsonb("branding_config").$type<{
+    logo?: string;
+    primaryColor?: string;
+    companyName?: string;
+  }>(),
+  isActive: boolean("is_active").default(true).notNull(),
+  // Existing fields
   customTradeCategories: jsonb("custom_trade_categories"),
   slaUrgentAcknowledgeMinutes: integer("sla_urgent_acknowledge_minutes").default(120),
   slaUrgentScheduleMinutes: integer("sla_urgent_schedule_minutes").default(240),
@@ -77,22 +117,41 @@ export const homes = pgTable("homes", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Subcontractors are global profiles — not tied to a single builder.
+// Builder-specific relationships are managed via builderSubcontractorRelationships.
 export const subcontractors = pgTable("subcontractors", {
   id: uuid("id").primaryKey().defaultRandom(),
-  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   companyName: text("company_name").notNull(),
   contactName: text("contact_name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   phone: text("phone"),
   tradeCategories: jsonb("trade_categories").notNull(),
+  slug: varchar("slug", { length: 100 }).unique(),
+  bio: text("bio"),
+  serviceArea: text("service_area"),
+  licenseNumber: text("license_number"),
+  insuranceExpiresAt: timestamp("insurance_expires_at"),
+  isVerified: boolean("is_verified").default(false).notNull(),
   status: text("status").default("active"),
   calendarToken: text("calendar_token").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const builderSubcontractorRelationships = pgTable("builder_subcontractor_relationships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  status: builderSubRelationshipStatusEnum("status").notNull().default("active"),
+  invitedAt: timestamp("invited_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const homeTradeAssignments = pgTable("home_trade_assignments", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
   tradeCategory: text("trade_category").notNull(),
@@ -103,6 +162,7 @@ export const homeTradeAssignments = pgTable("home_trade_assignments", {
 
 export const serviceRequests = pgTable("service_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   assignedSubcontractorId: uuid("assigned_subcontractor_id").references(() => subcontractors.id).notNull(),
   tradeCategory: text("trade_category").notNull(),
@@ -128,6 +188,7 @@ export const serviceRequests = pgTable("service_requests", {
 
 export const serviceRequestAuditLog = pgTable("service_request_audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
   actorType: actorTypeEnum("actor_type").notNull(),
   actorEmail: text("actor_email"),
@@ -151,6 +212,7 @@ export const subcontractorMagicLinks = pgTable("subcontractor_magic_links", {
 
 export const serviceRequestMessages = pgTable("service_request_messages", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
   senderType: actorTypeEnum("sender_type").notNull(),
   senderName: text("sender_name").notNull(),
@@ -171,6 +233,7 @@ export const homeownerMagicLinks = pgTable("homeowner_magic_links", {
 
 export const homeownerAccounts = pgTable("homeowner_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   supabaseUserId: text("supabase_user_id").notNull().unique(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   email: text("email").notNull(),
@@ -189,6 +252,7 @@ export const subcontractorAccounts = pgTable("subcontractor_accounts", {
 
 export const serviceRequestRatings = pgTable("service_request_ratings", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   rating: integer("rating").notNull(),
@@ -198,6 +262,7 @@ export const serviceRequestRatings = pgTable("service_request_ratings", {
 
 export const scheduleApprovals = pgTable("schedule_approvals", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id).notNull(),
   status: text("status").notNull().default("pending"),
   homeownerResponse: text("homeowner_response"),
@@ -207,6 +272,7 @@ export const scheduleApprovals = pgTable("schedule_approvals", {
 
 export const maintenanceItems = pgTable("maintenance_items", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   name: text("name").notNull(),
   description: text("description"),
@@ -226,6 +292,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   homeownerId: uuid("homeowner_id").references(() => homeownerAccounts.id).notNull(),
   type: notificationTypeEnum("type").notNull(),
   title: text("title").notNull(),
@@ -237,6 +304,7 @@ export const notifications = pgTable("notifications", {
 
 export const notificationPreferences = pgTable("notification_preferences", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   homeownerId: uuid("homeowner_id").references(() => homeownerAccounts.id).notNull().unique(),
   emailEnabled: boolean("email_enabled").default(true).notNull(),
   smsEnabled: boolean("sms_enabled").default(false).notNull(),
@@ -258,6 +326,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
 
 export const maintenanceReminders = pgTable("maintenance_reminders", {
   id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
   maintenanceItemId: uuid("maintenance_item_id").references(() => maintenanceItems.id).notNull(),
   homeId: uuid("home_id").references(() => homes.id).notNull(),
   title: text("title").notNull(),
@@ -376,5 +445,32 @@ export const invoiceLineItems = pgTable("invoice_line_items", {
   quantity: integer("quantity").notNull().default(1),
   unitPriceCents: integer("unit_price_cents").notNull(),
   totalCents: integer("total_cents").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ==================== MULTI-TENANCY TABLES ====================
+
+export const staffUsers = pgTable("staff_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  supabaseUserId: text("supabase_user_id").notNull().unique(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  role: staffRoleEnum("role").notNull().default("field_tech"),
+  isActive: boolean("is_active").default(true).notNull(),
+  invitedAt: timestamp("invited_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const billingRecords = pgTable("billing_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  type: billingRecordTypeEnum("type").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  description: text("description"),
+  stripePaymentId: varchar("stripe_payment_id", { length: 255 }),
+  periodStart: timestamp("period_start"),
+  periodEnd: timestamp("period_end"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

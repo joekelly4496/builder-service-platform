@@ -1,15 +1,21 @@
 import { db } from "@/lib/db";
 import { homes } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    
+
     const [home] = await db
       .select({
         id: homes.id,
@@ -18,7 +24,7 @@ export async function GET(
         state: homes.state,
       })
       .from(homes)
-      .where(eq(homes.id, id));
+      .where(and(eq(homes.id, id), eq(homes.builderId, builder.id)));
 
     if (!home) {
       return NextResponse.json({ success: false, error: "Home not found" }, { status: 404 });

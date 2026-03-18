@@ -2,33 +2,16 @@ import { db } from "@/lib/db";
 import { notifications, homeownerAccounts } from "@/lib/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
 // GET: Fetch notifications for the homeowner
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Missing userId" },
-        { status: 400 }
-      );
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
-
-    // Find homeowner account
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json(
-        { success: false, error: "Account not found" },
-        { status: 404 }
-      );
-    }
+    const { account } = result;
 
     // Fetch recent notifications (last 50)
     const results = await db
@@ -58,29 +41,14 @@ export async function GET(request: Request) {
 // PATCH: Mark notifications as read
 export async function PATCH(request: Request) {
   try {
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const { account } = result;
+
     const body = await request.json();
-    const { userId, notificationIds } = body;
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Missing userId" },
-        { status: 400 }
-      );
-    }
-
-    // Find homeowner account
-    const [account] = await db
-      .select()
-      .from(homeownerAccounts)
-      .where(eq(homeownerAccounts.supabaseUserId, userId))
-      .limit(1);
-
-    if (!account) {
-      return NextResponse.json(
-        { success: false, error: "Account not found" },
-        { status: 404 }
-      );
-    }
+    const { notificationIds } = body;
 
     if (notificationIds && Array.isArray(notificationIds) && notificationIds.length > 0) {
       // Mark specific notifications as read
