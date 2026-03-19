@@ -30,7 +30,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Joe Kelly"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1b. Test Builder 2 login (kelster38@hotmail.com)
 INSERT INTO auth.users (
@@ -46,7 +46,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Kelsey Test"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1c. Homeowner 1 — North Shore home 1
 INSERT INTO auth.users (
@@ -62,7 +62,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Alice Johnson"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1d. Homeowner 2 — North Shore home 2
 INSERT INTO auth.users (
@@ -78,7 +78,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Bob Smith"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1e. Homeowner 3 — Builder 2 home 1
 INSERT INTO auth.users (
@@ -94,7 +94,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Carol Davis"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1f. Homeowner 4 — Builder 2 home 2
 INSERT INTO auth.users (
@@ -110,7 +110,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Dan Wilson"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1g. Sub auth: ACT Plumbing (reuse existing profile 7ab486e6)
 INSERT INTO auth.users (
@@ -126,7 +126,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "ACT Plumbing"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1h. Sub auth: Powertown Electric (reuse existing profile b76bbe32)
 INSERT INTO auth.users (
@@ -142,7 +142,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Powertown Electric"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- 1i. Sub auth: Trim Guys (reuse existing profile ae52dee3)
 INSERT INTO auth.users (
@@ -158,7 +158,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Trim Guys"}',
   false, now(), now(), '', ''
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- STEP 2: Create auth.identities for each user
@@ -166,31 +166,31 @@ INSERT INTO auth.users (
 -- ============================================================
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', '{"sub": "a1000000-0000-0000-0000-000000000001", "email": "northshoredev44@gmail.com"}', 'email', 'a1000000-0000-0000-0000-000000000001', now(), now(), now());
+VALUES ('a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', '{"sub": "a1000000-0000-0000-0000-000000000001", "email": "northshoredev44@gmail.com"}', 'email', 'a1000000-0000-0000-0000-000000000001', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('a2000000-0000-0000-0000-000000000002', 'a2000000-0000-0000-0000-000000000002', '{"sub": "a2000000-0000-0000-0000-000000000002", "email": "kelster38@hotmail.com"}', 'email', 'a2000000-0000-0000-0000-000000000002', now(), now(), now());
+VALUES ('a2000000-0000-0000-0000-000000000002', 'a2000000-0000-0000-0000-000000000002', '{"sub": "a2000000-0000-0000-0000-000000000002", "email": "kelster38@hotmail.com"}', 'email', 'a2000000-0000-0000-0000-000000000002', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('b1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '{"sub": "b1000000-0000-0000-0000-000000000001", "email": "naturalbeautyreceipts@gmail.com"}', 'email', 'b1000000-0000-0000-0000-000000000001', now(), now(), now());
+VALUES ('b1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '{"sub": "b1000000-0000-0000-0000-000000000001", "email": "naturalbeautyreceipts@gmail.com"}', 'email', 'b1000000-0000-0000-0000-000000000001', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('b2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', '{"sub": "b2000000-0000-0000-0000-000000000002", "email": "medicalpracticeconsulting15@gmail.com"}', 'email', 'b2000000-0000-0000-0000-000000000002', now(), now(), now());
+VALUES ('b2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', '{"sub": "b2000000-0000-0000-0000-000000000002", "email": "medicalpracticeconsulting15@gmail.com"}', 'email', 'b2000000-0000-0000-0000-000000000002', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('b3000000-0000-0000-0000-000000000003', 'b3000000-0000-0000-0000-000000000003', '{"sub": "b3000000-0000-0000-0000-000000000003", "email": "52rulandproject@gmail.com"}', 'email', 'b3000000-0000-0000-0000-000000000003', now(), now(), now());
+VALUES ('b3000000-0000-0000-0000-000000000003', 'b3000000-0000-0000-0000-000000000003', '{"sub": "b3000000-0000-0000-0000-000000000003", "email": "52rulandproject@gmail.com"}', 'email', 'b3000000-0000-0000-0000-000000000003', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('b4000000-0000-0000-0000-000000000004', 'b4000000-0000-0000-0000-000000000004', '{"sub": "b4000000-0000-0000-0000-000000000004", "email": "homeowner4@test.com"}', 'email', 'b4000000-0000-0000-0000-000000000004', now(), now(), now());
+VALUES ('b4000000-0000-0000-0000-000000000004', 'b4000000-0000-0000-0000-000000000004', '{"sub": "b4000000-0000-0000-0000-000000000004", "email": "homeowner4@test.com"}', 'email', 'b4000000-0000-0000-0000-000000000004', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', '{"sub": "c1000000-0000-0000-0000-000000000001", "email": "t22035002@gmail.com"}', 'email', 'c1000000-0000-0000-0000-000000000001', now(), now(), now());
+VALUES ('c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', '{"sub": "c1000000-0000-0000-0000-000000000001", "email": "t22035002@gmail.com"}', 'email', 'c1000000-0000-0000-0000-000000000001', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('c2000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000002', '{"sub": "c2000000-0000-0000-0000-000000000002", "email": "reviewshoboken@gmail.com"}', 'email', 'c2000000-0000-0000-0000-000000000002', now(), now(), now());
+VALUES ('c2000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000002', '{"sub": "c2000000-0000-0000-0000-000000000002", "email": "reviewshoboken@gmail.com"}', 'email', 'c2000000-0000-0000-0000-000000000002', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
-VALUES ('c3000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000003', '{"sub": "c3000000-0000-0000-0000-000000000003", "email": "hflax40@yahoo.com"}', 'email', 'c3000000-0000-0000-0000-000000000003', now(), now(), now());
+VALUES ('c3000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000003', '{"sub": "c3000000-0000-0000-0000-000000000003", "email": "hflax40@yahoo.com"}', 'email', 'c3000000-0000-0000-0000-000000000003', now(), now(), now()) ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- STEP 3: Create Test Builder 2
@@ -208,7 +208,7 @@ VALUES (
   true,
   'complete',
   now(), now()
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- STEP 4: Create builder_accounts (link auth → builders)
@@ -216,11 +216,13 @@ VALUES (
 
 -- North Shore → northshoredev44@gmail.com
 INSERT INTO builder_accounts (supabase_user_id, builder_id, email, role)
-VALUES ('a1000000-0000-0000-0000-000000000001', '9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'northshoredev44@gmail.com', 'owner');
+VALUES ('a1000000-0000-0000-0000-000000000001', '9d4b6bbd-2a58-41d3-95e2-564b1b994fca', 'northshoredev44@gmail.com', 'owner')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- Builder 2 → kelster38@hotmail.com
 INSERT INTO builder_accounts (supabase_user_id, builder_id, email, role)
-VALUES ('a2000000-0000-0000-0000-000000000002', 'e2000000-0000-0000-0000-000000000002', 'kelster38@hotmail.com', 'owner');
+VALUES ('a2000000-0000-0000-0000-000000000002', 'e2000000-0000-0000-0000-000000000002', 'kelster38@hotmail.com', 'owner')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- ============================================================
 -- STEP 5: Create Homes (2 per builder)
@@ -230,27 +232,27 @@ VALUES ('a2000000-0000-0000-0000-000000000002', 'e2000000-0000-0000-0000-0000000
 INSERT INTO homes (id, builder_id, address, city, state, zip_code, homeowner_name, homeowner_email, homeowner_phone, project_completed_at, warranty_expires_at, created_at, updated_at)
 VALUES (
   'd1000000-0000-0000-0000-000000000001',
-  '9d4b6bbd-dbbd-4077-8a4c-df082346a4a2',
+  '9d4b6bbd-2a58-41d3-95e2-564b1b994fca',
   '31 W Maple Rd',
   'Fort Lauderdale', 'FL', '33311',
   'Alice Johnson', 'naturalbeautyreceipts@gmail.com', '555-100-0001',
   now() - interval '6 months',
   now() + interval '6 months',
   now(), now()
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- North Shore Home 2
 INSERT INTO homes (id, builder_id, address, city, state, zip_code, homeowner_name, homeowner_email, homeowner_phone, project_completed_at, warranty_expires_at, created_at, updated_at)
 VALUES (
   'd2000000-0000-0000-0000-000000000002',
-  '9d4b6bbd-dbbd-4077-8a4c-df082346a4a2',
+  '9d4b6bbd-2a58-41d3-95e2-564b1b994fca',
   '456 Oak Avenue',
   'Fort Lauderdale', 'FL', '33312',
   'Bob Smith', 'medicalpracticeconsulting15@gmail.com', '555-100-0002',
   now() - interval '3 months',
   now() + interval '9 months',
   now(), now()
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- Builder 2 Home 1
 INSERT INTO homes (id, builder_id, address, city, state, zip_code, homeowner_name, homeowner_email, homeowner_phone, project_completed_at, warranty_expires_at, created_at, updated_at)
@@ -263,7 +265,7 @@ VALUES (
   now() - interval '4 months',
   now() + interval '8 months',
   now(), now()
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- Builder 2 Home 2
 INSERT INTO homes (id, builder_id, address, city, state, zip_code, homeowner_name, homeowner_email, homeowner_phone, project_completed_at, warranty_expires_at, created_at, updated_at)
@@ -276,23 +278,27 @@ VALUES (
   now() - interval '2 months',
   now() + interval '10 months',
   now(), now()
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- STEP 6: Create homeowner_accounts (link auth → homes)
 -- ============================================================
 
 INSERT INTO homeowner_accounts (builder_id, supabase_user_id, home_id, email)
-VALUES ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b1000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001', 'naturalbeautyreceipts@gmail.com');
+VALUES ('9d4b6bbd-2a58-41d3-95e2-564b1b994fca', 'b1000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001', 'naturalbeautyreceipts@gmail.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 INSERT INTO homeowner_accounts (builder_id, supabase_user_id, home_id, email)
-VALUES ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b2000000-0000-0000-0000-000000000002', 'd2000000-0000-0000-0000-000000000002', 'medicalpracticeconsulting15@gmail.com');
+VALUES ('9d4b6bbd-2a58-41d3-95e2-564b1b994fca', 'b2000000-0000-0000-0000-000000000002', 'd2000000-0000-0000-0000-000000000002', 'medicalpracticeconsulting15@gmail.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 INSERT INTO homeowner_accounts (builder_id, supabase_user_id, home_id, email)
-VALUES ('e2000000-0000-0000-0000-000000000002', 'b3000000-0000-0000-0000-000000000003', 'd3000000-0000-0000-0000-000000000003', '52rulandproject@gmail.com');
+VALUES ('e2000000-0000-0000-0000-000000000002', 'b3000000-0000-0000-0000-000000000003', 'd3000000-0000-0000-0000-000000000003', '52rulandproject@gmail.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 INSERT INTO homeowner_accounts (builder_id, supabase_user_id, home_id, email)
-VALUES ('e2000000-0000-0000-0000-000000000002', 'b4000000-0000-0000-0000-000000000004', 'd4000000-0000-0000-0000-000000000004', 'homeowner4@test.com');
+VALUES ('e2000000-0000-0000-0000-000000000002', 'b4000000-0000-0000-0000-000000000004', 'd4000000-0000-0000-0000-000000000004', 'homeowner4@test.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- ============================================================
 -- STEP 7: Create subcontractor_accounts (link auth → sub profiles)
@@ -301,15 +307,18 @@ VALUES ('e2000000-0000-0000-0000-000000000002', 'b4000000-0000-0000-0000-0000000
 
 -- ACT Plumbing (7ab486e6)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c1000000-0000-0000-0000-000000000001', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 't22035002@gmail.com');
+VALUES ('c1000000-0000-0000-0000-000000000001', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 't22035002@gmail.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- Powertown Electric (b76bbe32)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'reviewshoboken@gmail.com');
+VALUES ('c2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'reviewshoboken@gmail.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- Trim Guys (ae52dee3)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c3000000-0000-0000-0000-000000000003', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'hflax40@yahoo.com');
+VALUES ('c3000000-0000-0000-0000-000000000003', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'hflax40@yahoo.com')
+ON CONFLICT (supabase_user_id) DO NOTHING;
 
 -- ============================================================
 -- STEP 8: Create builder_subcontractor_relationships
@@ -318,27 +327,33 @@ VALUES ('c3000000-0000-0000-0000-000000000003', 'ae52dee3-5061-4cc8-bf45-406cb72
 
 -- North Shore ↔ ACT Plumbing
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 'active');
+SELECT '9d4b6bbd-2a58-41d3-95e2-564b1b994fca', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = '9d4b6bbd-2a58-41d3-95e2-564b1b994fca' AND subcontractor_id = '7ab486e6-f47d-43f9-9e27-742af069eb6a');
 
 -- North Shore ↔ Powertown Electric
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b76bbe32-761e-4338-a74b-1606905267d9', 'active');
+SELECT '9d4b6bbd-2a58-41d3-95e2-564b1b994fca', 'b76bbe32-761e-4338-a74b-1606905267d9', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = '9d4b6bbd-2a58-41d3-95e2-564b1b994fca' AND subcontractor_id = 'b76bbe32-761e-4338-a74b-1606905267d9');
 
 -- North Shore ↔ Trim Guys
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'active');
+SELECT '9d4b6bbd-2a58-41d3-95e2-564b1b994fca', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = '9d4b6bbd-2a58-41d3-95e2-564b1b994fca' AND subcontractor_id = 'ae52dee3-5061-4cc8-bf45-406cb72eba75');
 
 -- Builder 2 ↔ ACT Plumbing
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('e2000000-0000-0000-0000-000000000002', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 'active');
+SELECT 'e2000000-0000-0000-0000-000000000002', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = 'e2000000-0000-0000-0000-000000000002' AND subcontractor_id = '7ab486e6-f47d-43f9-9e27-742af069eb6a');
 
 -- Builder 2 ↔ Powertown Electric
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('e2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'active');
+SELECT 'e2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = 'e2000000-0000-0000-0000-000000000002' AND subcontractor_id = 'b76bbe32-761e-4338-a74b-1606905267d9');
 
 -- Builder 2 ↔ Trim Guys
 INSERT INTO builder_subcontractor_relationships (builder_id, subcontractor_id, status)
-VALUES ('e2000000-0000-0000-0000-000000000002', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'active');
+SELECT 'e2000000-0000-0000-0000-000000000002', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'active'
+WHERE NOT EXISTS (SELECT 1 FROM builder_subcontractor_relationships WHERE builder_id = 'e2000000-0000-0000-0000-000000000002' AND subcontractor_id = 'ae52dee3-5061-4cc8-bf45-406cb72eba75');
 
 -- ============================================================
 -- STEP 9: Verify everything
