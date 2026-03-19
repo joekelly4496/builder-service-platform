@@ -58,6 +58,10 @@ export default function BuilderLoginPage() {
         });
         const result = await res.json();
 
+        if (!res.ok) {
+          throw new Error(result.error || "Failed to verify account");
+        }
+
         if (result.hasAccount && result.onboardingStatus === "completed") {
           window.location.href = "/dashboard";
         } else {

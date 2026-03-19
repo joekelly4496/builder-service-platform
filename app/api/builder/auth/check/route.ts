@@ -47,6 +47,10 @@ export async function GET(request: NextRequest) {
       onboardingStatus: builder?.onboardingStatus || "company_info",
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Auth check error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
