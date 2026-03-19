@@ -2,7 +2,7 @@
 -- HOMEFRONT SEED SCRIPT — Test Builder 2, Homes, Subs
 -- ============================================================
 -- Run in Supabase SQL Editor AFTER the cleanup script.
--- Password for ALL test accounts: TestPassword123!
+-- Password for ALL test accounts: test123!
 -- ============================================================
 
 BEGIN;
@@ -10,7 +10,7 @@ BEGIN;
 -- ============================================================
 -- STEP 1: Create Auth Users
 -- ============================================================
--- Password: TestPassword123! for all accounts
+-- Password: test123! for all accounts
 
 -- 1a. North Shore builder login (northshoredev44@gmail.com)
 INSERT INTO auth.users (
@@ -21,7 +21,7 @@ INSERT INTO auth.users (
   'a1000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
   'northshoredev44@gmail.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Joe Kelly"}',
@@ -37,7 +37,7 @@ INSERT INTO auth.users (
   'a2000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000000',
   'kelster38@hotmail.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Kelsey Test"}',
@@ -53,7 +53,7 @@ INSERT INTO auth.users (
   'b1000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
   'homeowner1@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Alice Johnson"}',
@@ -69,7 +69,7 @@ INSERT INTO auth.users (
   'b2000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000000',
   'homeowner2@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Bob Smith"}',
@@ -85,7 +85,7 @@ INSERT INTO auth.users (
   'b3000000-0000-0000-0000-000000000003',
   '00000000-0000-0000-0000-000000000000',
   'homeowner3@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Carol Davis"}',
@@ -101,7 +101,7 @@ INSERT INTO auth.users (
   'b4000000-0000-0000-0000-000000000004',
   '00000000-0000-0000-0000-000000000000',
   'homeowner4@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Dan Wilson"}',
@@ -117,7 +117,7 @@ INSERT INTO auth.users (
   'c1000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
   'actplumbing@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "ACT Plumbing"}',
@@ -133,7 +133,7 @@ INSERT INTO auth.users (
   'c2000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000000',
   'powertown@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Powertown Electric"}',
@@ -149,7 +149,7 @@ INSERT INTO auth.users (
   'c3000000-0000-0000-0000-000000000003',
   '00000000-0000-0000-0000-000000000000',
   'trimguys@test.com',
-  crypt('TestPassword123!', gen_salt('bf')),
+  crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
   '{"name": "Trim Guys"}',
@@ -365,5 +365,5 @@ COMMIT;
 --   powertown@test.com   → Powertown Electric (electrical)
 --   trimguys@test.com    → Trim Guys (carpentry)
 --
--- ALL PASSWORDS: TestPassword123!
+-- ALL PASSWORDS: test123!
 -- ============================================================
