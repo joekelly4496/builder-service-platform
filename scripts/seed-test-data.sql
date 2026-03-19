@@ -52,7 +52,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'b1000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
-  'homeowner1@test.com',
+  'naturalbeautyreceipts@gmail.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -68,7 +68,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'b2000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000000',
-  'homeowner2@test.com',
+  'medicalpracticeconsulting15@gmail.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -84,7 +84,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'b3000000-0000-0000-0000-000000000003',
   '00000000-0000-0000-0000-000000000000',
-  'homeowner3@test.com',
+  '52rulandproject@gmail.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -116,7 +116,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'c1000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000000',
-  'actplumbing@test.com',
+  't22035002@gmail.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -132,7 +132,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'c2000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000000',
-  'powertown@test.com',
+  'reviewshoboken@gmail.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -148,7 +148,7 @@ INSERT INTO auth.users (
 ) VALUES (
   'c3000000-0000-0000-0000-000000000003',
   '00000000-0000-0000-0000-000000000000',
-  'trimguys@test.com',
+  'hflax40@yahoo.com',
   crypt('test123!', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
   '{"provider": "email", "providers": ["email"]}',
@@ -165,13 +165,13 @@ INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, 
 VALUES
   ('a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', '{"sub": "a1000000-0000-0000-0000-000000000001", "email": "northshoredev44@gmail.com"}', 'email', 'a1000000-0000-0000-0000-000000000001', now(), now(), now()),
   ('a2000000-0000-0000-0000-000000000002', 'a2000000-0000-0000-0000-000000000002', '{"sub": "a2000000-0000-0000-0000-000000000002", "email": "kelster38@hotmail.com"}', 'email', 'a2000000-0000-0000-0000-000000000002', now(), now(), now()),
-  ('b1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '{"sub": "b1000000-0000-0000-0000-000000000001", "email": "homeowner1@test.com"}', 'email', 'b1000000-0000-0000-0000-000000000001', now(), now(), now()),
-  ('b2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', '{"sub": "b2000000-0000-0000-0000-000000000002", "email": "homeowner2@test.com"}', 'email', 'b2000000-0000-0000-0000-000000000002', now(), now(), now()),
-  ('b3000000-0000-0000-0000-000000000003', 'b3000000-0000-0000-0000-000000000003', '{"sub": "b3000000-0000-0000-0000-000000000003", "email": "homeowner3@test.com"}', 'email', 'b3000000-0000-0000-0000-000000000003', now(), now(), now()),
+  ('b1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', '{"sub": "b1000000-0000-0000-0000-000000000001", "email": "naturalbeautyreceipts@gmail.com"}', 'email', 'b1000000-0000-0000-0000-000000000001', now(), now(), now()),
+  ('b2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', '{"sub": "b2000000-0000-0000-0000-000000000002", "email": "medicalpracticeconsulting15@gmail.com"}', 'email', 'b2000000-0000-0000-0000-000000000002', now(), now(), now()),
+  ('b3000000-0000-0000-0000-000000000003', 'b3000000-0000-0000-0000-000000000003', '{"sub": "b3000000-0000-0000-0000-000000000003", "email": "52rulandproject@gmail.com"}', 'email', 'b3000000-0000-0000-0000-000000000003', now(), now(), now()),
   ('b4000000-0000-0000-0000-000000000004', 'b4000000-0000-0000-0000-000000000004', '{"sub": "b4000000-0000-0000-0000-000000000004", "email": "homeowner4@test.com"}', 'email', 'b4000000-0000-0000-0000-000000000004', now(), now(), now()),
-  ('c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', '{"sub": "c1000000-0000-0000-0000-000000000001", "email": "actplumbing@test.com"}', 'email', 'c1000000-0000-0000-0000-000000000001', now(), now(), now()),
-  ('c2000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000002', '{"sub": "c2000000-0000-0000-0000-000000000002", "email": "powertown@test.com"}', 'email', 'c2000000-0000-0000-0000-000000000002', now(), now(), now()),
-  ('c3000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000003', '{"sub": "c3000000-0000-0000-0000-000000000003", "email": "trimguys@test.com"}', 'email', 'c3000000-0000-0000-0000-000000000003', now(), now(), now());
+  ('c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', '{"sub": "c1000000-0000-0000-0000-000000000001", "email": "t22035002@gmail.com"}', 'email', 'c1000000-0000-0000-0000-000000000001', now(), now(), now()),
+  ('c2000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000002', '{"sub": "c2000000-0000-0000-0000-000000000002", "email": "reviewshoboken@gmail.com"}', 'email', 'c2000000-0000-0000-0000-000000000002', now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000003', '{"sub": "c3000000-0000-0000-0000-000000000003", "email": "hflax40@yahoo.com"}', 'email', 'c3000000-0000-0000-0000-000000000003', now(), now(), now());
 
 -- ============================================================
 -- STEP 3: Create Test Builder 2
@@ -214,7 +214,7 @@ VALUES (
   '9d4b6bbd-dbbd-4077-8a4c-df082346a4a2',
   '31 W Maple Rd',
   'Fort Lauderdale', 'FL', '33311',
-  'Alice Johnson', 'homeowner1@test.com', '555-100-0001',
+  'Alice Johnson', 'naturalbeautyreceipts@gmail.com', '555-100-0001',
   now() - interval '6 months',
   now() + interval '6 months',
   now(), now()
@@ -227,7 +227,7 @@ VALUES (
   '9d4b6bbd-dbbd-4077-8a4c-df082346a4a2',
   '456 Oak Avenue',
   'Fort Lauderdale', 'FL', '33312',
-  'Bob Smith', 'homeowner2@test.com', '555-100-0002',
+  'Bob Smith', 'medicalpracticeconsulting15@gmail.com', '555-100-0002',
   now() - interval '3 months',
   now() + interval '9 months',
   now(), now()
@@ -240,7 +240,7 @@ VALUES (
   'e2000000-0000-0000-0000-000000000002',
   '789 Pine Street',
   'Pompano Beach', 'FL', '33060',
-  'Carol Davis', 'homeowner3@test.com', '555-100-0003',
+  'Carol Davis', '52rulandproject@gmail.com', '555-100-0003',
   now() - interval '4 months',
   now() + interval '8 months',
   now(), now()
@@ -265,9 +265,9 @@ VALUES (
 
 INSERT INTO homeowner_accounts (builder_id, supabase_user_id, home_id, email)
 VALUES
-  ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b1000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001', 'homeowner1@test.com'),
-  ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b2000000-0000-0000-0000-000000000002', 'd2000000-0000-0000-0000-000000000002', 'homeowner2@test.com'),
-  ('e2000000-0000-0000-0000-000000000002', 'b3000000-0000-0000-0000-000000000003', 'd3000000-0000-0000-0000-000000000003', 'homeowner3@test.com'),
+  ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b1000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001', 'naturalbeautyreceipts@gmail.com'),
+  ('9d4b6bbd-dbbd-4077-8a4c-df082346a4a2', 'b2000000-0000-0000-0000-000000000002', 'd2000000-0000-0000-0000-000000000002', 'medicalpracticeconsulting15@gmail.com'),
+  ('e2000000-0000-0000-0000-000000000002', 'b3000000-0000-0000-0000-000000000003', 'd3000000-0000-0000-0000-000000000003', '52rulandproject@gmail.com'),
   ('e2000000-0000-0000-0000-000000000002', 'b4000000-0000-0000-0000-000000000004', 'd4000000-0000-0000-0000-000000000004', 'homeowner4@test.com');
 
 -- ============================================================
@@ -277,15 +277,15 @@ VALUES
 
 -- ACT Plumbing (7ab486e6)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c1000000-0000-0000-0000-000000000001', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 'actplumbing@test.com');
+VALUES ('c1000000-0000-0000-0000-000000000001', '7ab486e6-f47d-43f9-9e27-742af069eb6a', 't22035002@gmail.com');
 
 -- Powertown Electric (b76bbe32)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'powertown@test.com');
+VALUES ('c2000000-0000-0000-0000-000000000002', 'b76bbe32-761e-4338-a74b-1606905267d9', 'reviewshoboken@gmail.com');
 
 -- Trim Guys (ae52dee3)
 INSERT INTO subcontractor_accounts (supabase_user_id, subcontractor_id, email)
-VALUES ('c3000000-0000-0000-0000-000000000003', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'trimguys@test.com');
+VALUES ('c3000000-0000-0000-0000-000000000003', 'ae52dee3-5061-4cc8-bf45-406cb72eba75', 'hflax40@yahoo.com');
 
 -- ============================================================
 -- STEP 8: Create builder_subcontractor_relationships
@@ -355,15 +355,15 @@ COMMIT;
 --   kelster38@hotmail.com     → Kelsey Custom Homes (owner)
 --
 -- HOMEOWNERS:
---   homeowner1@test.com → Alice Johnson, 31 W Maple Rd (North Shore)
---   homeowner2@test.com → Bob Smith, 456 Oak Avenue (North Shore)
---   homeowner3@test.com → Carol Davis, 789 Pine Street (Builder 2)
---   homeowner4@test.com → Dan Wilson, 101 Elm Drive (Builder 2)
+--   naturalbeautyreceipts@gmail.com        → Alice Johnson, 31 W Maple Rd (North Shore)
+--   medicalpracticeconsulting15@gmail.com   → Bob Smith, 456 Oak Avenue (North Shore)
+--   52rulandproject@gmail.com              → Carol Davis, 789 Pine Street (Builder 2)
+--   homeowner4@test.com                    → Dan Wilson, 101 Elm Drive (Builder 2)
 --
 -- SUBCONTRACTORS (login via sub portal):
---   actplumbing@test.com → ACT Plumbing (plumbing)
---   powertown@test.com   → Powertown Electric (electrical)
---   trimguys@test.com    → Trim Guys (carpentry)
+--   t22035002@gmail.com      → ACT Plumbing (plumbing)
+--   reviewshoboken@gmail.com → Powertown Electric (electrical)
+--   hflax40@yahoo.com        → Trim Guys (carpentry)
 --
 -- ALL PASSWORDS: test123!
 -- ============================================================
