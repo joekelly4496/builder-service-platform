@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Check if builder account already exists
+        // Check if builder account already exists for this auth user
         const [existing] = await db
           .select()
           .from(builderAccounts)
@@ -63,6 +63,40 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ success: true, builderId: existing.builderId });
         }
 
+        // Check if a builder with this email already exists (pre-existing account)
+        const [existingBuilder] = await db
+          .select()
+          .from(builders)
+          .where(eq(builders.email, user.email!))
+          .limit(1);
+
+        if (existingBuilder) {
+          // Link existing builder to this auth user
+          await db.insert(builderAccounts).values({
+            supabaseUserId: user.id,
+            builderId: existingBuilder.id,
+            email: user.email!,
+          });
+
+          // Update builder profile with new info
+          await db
+            .update(builders)
+            .set({
+              companyName,
+              contactName,
+              phone: phone || null,
+              slug: existingBuilder.slug || companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+              onboardingStatus: "add_homes",
+              updatedAt: new Date(),
+            })
+            .where(eq(builders.id, existingBuilder.id));
+
+          return NextResponse.json({ success: true, builderId: existingBuilder.id });
+        }
+
+        // Generate slug from company name
+        const baseSlug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
         // Create new builder + account
         const [newBuilder] = await db
           .insert(builders)
@@ -71,6 +105,7 @@ export async function POST(request: NextRequest) {
             contactName,
             email: user.email!,
             phone: phone || null,
+            slug: baseSlug,
             onboardingStatus: "add_homes",
           })
           .returning();
@@ -180,6 +215,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error("Onboarding error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred during onboarding. Please try again." }, { status: 500 });
   }
 }
