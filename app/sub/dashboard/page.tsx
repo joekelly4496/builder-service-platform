@@ -142,7 +142,7 @@ export default function SubDashboardPage() {
               <p className="text-slate-500 font-medium">No active requests</p>
             </div>
           ) : (
-            activeRequests.map(({ request, home }) => (
+            activeRequests.map(({ request, home, builder }) => (
               <Link
                 key={request.id}
                 href={`/sub/requests/${request.id}`}
@@ -154,6 +154,9 @@ export default function SubDashboardPage() {
                       {request.tradeCategory} — {home.address}
                     </h3>
                     <p className="text-slate-600 font-medium mt-1">{home.city}, {home.state}</p>
+                    {builder?.companyName && (
+                      <p className="text-purple-600 text-xs font-bold mt-1">Builder: {builder.companyName}</p>
+                    )}
                     <p className="text-slate-500 text-sm mt-1">{request.homeownerDescription}</p>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
@@ -186,7 +189,7 @@ export default function SubDashboardPage() {
           <>
             <h2 className="text-xl font-bold text-slate-900 mb-4">Completed Requests</h2>
             <div className="space-y-3 opacity-70">
-              {completedRequests.map(({ request, home }) => (
+              {completedRequests.map(({ request, home, builder }) => (
                 <Link
                   key={request.id}
                   href={`/sub/requests/${request.id}`}
@@ -198,6 +201,9 @@ export default function SubDashboardPage() {
                         {request.tradeCategory} — {home.address}
                       </h3>
                       <p className="text-slate-500 text-sm mt-0.5">{home.city}, {home.state}</p>
+                      {builder?.companyName && (
+                        <p className="text-purple-600 text-xs font-bold mt-0.5">Builder: {builder.companyName}</p>
+                      )}
                     </div>
                     <span className={`px-3 py-1 rounded-lg text-xs font-bold ${statusStyles[request.status]}`}>
                       {request.status.replace("_", " ").toUpperCase()}

@@ -52,10 +52,30 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (existing) {
+      if (existing.subcontractorId === subcontractorId) {
+        // Already linked to this exact sub — just confirm success
+        return NextResponse.json({ success: true, message: "Already linked" });
+      }
       return NextResponse.json(
-        { success: false, error: "This account is already linked to a subcontractor" },
+        { success: false, error: "This email is already linked to a different subcontractor profile. The subcontractor should use a different email or contact support." },
         { status: 400 }
       );
+    }
+
+    // Check if there's a stale record by email (e.g. user re-signed up with new Supabase ID)
+    const [existingByEmail] = await db
+      .select()
+      .from(subcontractorAccounts)
+      .where(eq(subcontractorAccounts.email, email))
+      .limit(1);
+
+    if (existingByEmail) {
+      // Update the stale supabase user ID
+      await db
+        .update(subcontractorAccounts)
+        .set({ supabaseUserId: user.id })
+        .where(eq(subcontractorAccounts.id, existingByEmail.id));
+      return NextResponse.json({ success: true, message: "Account re-linked with updated credentials" });
     }
 
     await db.insert(subcontractorAccounts).values({
