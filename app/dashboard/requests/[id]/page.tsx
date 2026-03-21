@@ -204,40 +204,58 @@ export default async function ServiceRequestDetailPage({
                 {Array.isArray(photoUrls) && photoUrls.length > 0 && (
                   <div>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
-                      📸 Completion Photos
+                      📷 Issue Photos / Videos
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {photoUrls.map((url: string, index: number) => (
-                        <a
-                          key={`${url}-${index}`}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group overflow-hidden rounded-xl border-2 border-slate-200 hover:border-blue-500 transition-all shadow-sm hover:shadow-md"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={url}
-                            alt={`Completion photo ${index + 1}`}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
-                            <svg
-                              className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                      {photoUrls.map((url: string, index: number) => {
+                        const isVideo = /\.(mp4|mov|webm|avi|mkv)(\?|$)/i.test(url);
+                        return (
+                          <a
+                            key={`${url}-${index}`}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative group overflow-hidden rounded-xl border-2 border-slate-200 hover:border-blue-500 transition-all shadow-sm hover:shadow-md"
+                          >
+                            {isVideo ? (
+                              <video
+                                src={url}
+                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
+                                muted
+                                playsInline
+                                preload="metadata"
                               />
-                            </svg>
-                          </div>
-                        </a>
-                      ))}
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={url}
+                                alt={`Issue photo ${index + 1}`}
+                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                            )}
+                            {isVideo && (
+                              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-semibold px-2 py-1 rounded-md">
+                                ▶ Video
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
+                              <svg
+                                className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                />
+                              </svg>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
