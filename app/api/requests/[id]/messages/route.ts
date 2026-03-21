@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { serviceRequestMessages, serviceRequests, homes, subcontractors, subcontractorMagicLinks, homeownerAccounts } from "@/lib/db/schema";
+import { serviceRequestMessages, serviceRequests, homes, subcontractors, subcontractorMagicLinks, homeownerAccounts, builders } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emails/send";
@@ -90,6 +90,36 @@ export async function POST(
         }
       } catch (notifErr) {
         console.error("Failed to create in-app notification:", notifErr);
+      }
+    };
+
+    // Helper: email the builder about a new message
+    const notifyBuilder = async () => {
+      try {
+        const [builder] = await db
+          .select()
+          .from(builders)
+          .where(eq(builders.id, requestData.home.builderId))
+          .limit(1);
+        if (builder) {
+          const builderEmailContent = getNewMessageEmail({
+            recipientName: builder.contactName,
+            senderName,
+            senderType,
+            message,
+            tradeCategory: requestData.request.tradeCategory,
+            homeAddress: requestData.home.address,
+          });
+          const result = await sendEmail({
+            to: builder.email,
+            subject: builderEmailContent.subject,
+            html: builderEmailContent.html,
+            text: builderEmailContent.text,
+          });
+          console.log("Builder email result:", result);
+        }
+      } catch (err) {
+        console.error("Failed to notify builder:", err);
       }
     };
 
@@ -196,6 +226,9 @@ export async function POST(
         console.error("Failed to send message SMS:", smsErr);
       }
 
+      // Notify builder about sub's message
+      await notifyBuilder();
+
     } else if (senderType === "homeowner") {
       console.log("Homeowner sent message - notifying subcontractor");
       const magicLinkResults = await db
@@ -226,6 +259,9 @@ export async function POST(
       } else {
         console.log("❌ Email failed:", (emailResult as any).error);
       }
+
+      // Notify builder about homeowner's message
+      await notifyBuilder();
     }
     console.log("========== NEW MESSAGE API COMPLETED ==========");
     return NextResponse.json({ success: true, message: newMessage });
