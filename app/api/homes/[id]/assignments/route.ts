@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { homeTradeAssignments, homes } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 
@@ -15,6 +15,17 @@ export async function GET(
     }
 
     const { id } = await params;
+
+    // Verify this home belongs to the authenticated builder
+    const [home] = await db
+      .select()
+      .from(homes)
+      .where(and(eq(homes.id, id), eq(homes.builderId, builder.id)))
+      .limit(1);
+
+    if (!home) {
+      return NextResponse.json({ success: false, error: "Home not found" }, { status: 404 });
+    }
 
     const assignments = await db
       .select({
@@ -36,12 +47,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { assignments } = body;
 
-    // Look up home to get builderId
-    const [home] = await db.select().from(homes).where(eq(homes.id, id)).limit(1);
+    // Verify this home belongs to the authenticated builder
+    const [home] = await db
+      .select()
+      .from(homes)
+      .where(and(eq(homes.id, id), eq(homes.builderId, builder.id)))
+      .limit(1);
+
     if (!home) {
       return NextResponse.json({ success: false, error: "Home not found" }, { status: 404 });
     }
@@ -53,7 +74,7 @@ export async function PUT(
 
     // Insert new assignments
     const newAssignments = Object.entries(assignments).map(([trade, subId]) => ({
-      builderId: home.builderId,
+      builderId: builder.id,
       homeId: id,
       subcontractorId: subId as string,
       tradeCategory: trade,

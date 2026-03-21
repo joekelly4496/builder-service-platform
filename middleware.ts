@@ -57,7 +57,61 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ==================== TENANT VALIDATION ====================
+  // Defense-in-depth: validate JWT claims contain the expected tenant identity.
+  // The custom_access_token_hook injects builder_id, homeowner_id, subcontractor_id,
+  // and user_role into JWT claims. We check these here so that even if a route
+  // forgets to validate, the middleware blocks cross-tenant access early.
+  if (user && isProtectedApi) {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+      // Decode the JWT to read custom claims injected by the hook
+      const token = session.access_token;
+      const payload = decodeJwtPayload(token);
+
+      const isBuilderRoute = pathname.startsWith("/api/builder/");
+      const isHomeownerRoute = pathname.startsWith("/api/homeowner/");
+
+      // Builder API routes require user_role=builder with a valid builder_id claim
+      if (isBuilderRoute && payload) {
+        if (payload.user_role !== "builder" || !payload.builder_id) {
+          return NextResponse.json(
+            { error: "Forbidden: not a builder account" },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Homeowner API routes require user_role=homeowner with a valid homeowner_id claim
+      if (isHomeownerRoute && payload) {
+        if (payload.user_role !== "homeowner" || !payload.homeowner_id) {
+          return NextResponse.json(
+            { error: "Forbidden: not a homeowner account" },
+            { status: 403 }
+          );
+        }
+      }
+    }
+  }
+
   return supabaseResponse;
+}
+
+/**
+ * Decode a JWT payload without verification (the token is already verified
+ * by Supabase auth — we just need to read the custom claims).
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = parts[1];
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
 }
 
 export const config = {

@@ -72,8 +72,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Look up home to get builderId
-    const [home] = await db.select().from(homes).where(eq(homes.id, homeId)).limit(1);
+    const builder = await getAuthenticatedBuilder();
+    if (!builder) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify this home belongs to the authenticated builder
+    const [home] = await db
+      .select()
+      .from(homes)
+      .where(and(eq(homes.id, homeId), eq(homes.builderId, builder.id)))
+      .limit(1);
     if (!home) {
       return NextResponse.json({ error: "Home not found" }, { status: 404 });
     }

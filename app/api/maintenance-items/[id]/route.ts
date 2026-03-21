@@ -67,7 +67,7 @@ export async function PUT(
       const [result] = await db
         .update(maintenanceReminders)
         .set(reminderUpdate)
-        .where(eq(maintenanceReminders.id, reminder.id))
+        .where(and(eq(maintenanceReminders.id, reminder.id), eq(maintenanceReminders.builderId, builder.id)))
         .returning();
       updatedReminder = result;
     }
@@ -97,7 +97,7 @@ export async function DELETE(
     const { id } = await params;
     await db
       .delete(maintenanceReminders)
-      .where(eq(maintenanceReminders.maintenanceItemId, id));
+      .where(and(eq(maintenanceReminders.maintenanceItemId, id), eq(maintenanceReminders.builderId, builder.id)));
     const [deleted] = await db
       .delete(maintenanceItems)
       .where(and(eq(maintenanceItems.id, id), eq(maintenanceItems.builderId, builder.id)))
