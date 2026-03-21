@@ -10,16 +10,21 @@ interface CreateBuilderNotificationParams {
 }
 
 export async function createBuilderNotification(params: CreateBuilderNotificationParams) {
-  const [notification] = await db
-    .insert(builderNotifications)
-    .values({
-      builderId: params.builderId,
-      type: params.type,
-      title: params.title,
-      message: params.message,
-      linkUrl: params.linkUrl ?? null,
-    })
-    .returning();
+  try {
+    const [notification] = await db
+      .insert(builderNotifications)
+      .values({
+        builderId: params.builderId,
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        linkUrl: params.linkUrl ?? null,
+      })
+      .returning();
 
-  return notification;
+    return notification;
+  } catch (error) {
+    console.error("❌ createBuilderNotification failed:", error);
+    throw error;
+  }
 }

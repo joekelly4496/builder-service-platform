@@ -10,16 +10,21 @@ interface CreateSubNotificationParams {
 }
 
 export async function createSubNotification(params: CreateSubNotificationParams) {
-  const [notification] = await db
-    .insert(subNotifications)
-    .values({
-      subcontractorId: params.subcontractorId,
-      type: params.type,
-      title: params.title,
-      message: params.message,
-      linkUrl: params.linkUrl ?? null,
-    })
-    .returning();
+  try {
+    const [notification] = await db
+      .insert(subNotifications)
+      .values({
+        subcontractorId: params.subcontractorId,
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        linkUrl: params.linkUrl ?? null,
+      })
+      .returning();
 
-  return notification;
+    return notification;
+  } catch (error) {
+    console.error("❌ createSubNotification failed:", error);
+    throw error;
+  }
 }

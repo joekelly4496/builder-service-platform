@@ -233,17 +233,23 @@ export async function POST(
             text: builderEmailContent.text,
           });
           console.log("Builder email result:", result);
-
-          await createBuilderNotification({
-            builderId: requestData.home.builderId,
-            type: "new_message",
-            title: `New message from ${senderName}`,
-            message: `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`,
-            linkUrl: `/dashboard`,
-          });
         }
       } catch (err) {
-        console.error("Failed to notify builder:", err);
+        console.error("Failed to email builder:", err);
+      }
+
+      // In-app notification (separate try/catch so email failure doesn't block it)
+      try {
+        await createBuilderNotification({
+          builderId: requestData.home.builderId,
+          type: "new_message",
+          title: `New message from ${senderName}`,
+          message: `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`,
+          linkUrl: `/dashboard`,
+        });
+        console.log("✅ Builder in-app notification created for new message");
+      } catch (notifErr) {
+        console.error("Failed to create builder in-app notification:", notifErr);
       }
     };
 
