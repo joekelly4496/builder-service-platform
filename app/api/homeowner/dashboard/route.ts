@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const result = await getAuthenticatedHomeowner();
     if (!result) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Your account is not linked to a home. Make sure you signed up with the same email your builder has on file." },
         { status: 401 }
       );
     }
