@@ -38,6 +38,14 @@ export async function POST(
       );
     }
 
+    // Verify the request belongs to the homeowner's home
+    if (serviceRequest.homeId !== homeowner.home.id) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     // Check if approval record already exists
     const [existing] = await db
       .select()

@@ -7,12 +7,19 @@ import { getScheduleConfirmationEmail } from "@/lib/emails/templates";
 import { formatICSDate, escapeICSText } from "@/lib/utils/calendar";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
+import { getAuthenticatedSubcontractor } from "@/lib/utils/sub-auth";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authenticate the subcontractor
+    const authResult = await getAuthenticatedSubcontractor(request);
+    if (!authResult) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { scheduledFor, notes } = body;
@@ -31,6 +38,12 @@ export async function POST(
     if (!requestData) {
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
+
+    // Verify the sub is assigned to this request
+    if (requestData.request.assignedSubcontractorId !== authResult.subcontractor.id) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const updateData: any = {
       status: "scheduled",
       scheduledFor: new Date(scheduledFor),

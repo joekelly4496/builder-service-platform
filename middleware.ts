@@ -30,7 +30,28 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refreshes the auth token if expired
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  // Protected page routes that require authentication
+  const protectedPagePaths = ["/dashboard", "/homeowner", "/builder"];
+  const isProtectedPage = protectedPagePaths.some((path) => pathname.startsWith(path));
+
+  if (isProtectedPage && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Protected API routes that require authentication (cookie-based)
+  // Note: /api/requests/* uses bearer token auth handled inside the route
+  const protectedApiPaths = ["/api/builder/", "/api/homeowner/"];
+  const isProtectedApi = protectedApiPaths.some((path) => pathname.startsWith(path));
+
+  if (isProtectedApi && !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   return supabaseResponse;
 }

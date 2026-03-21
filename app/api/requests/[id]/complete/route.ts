@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
+import { getAuthenticatedSubcontractor } from "@/lib/utils/sub-auth";
 
 export async function POST(
   request: Request,
@@ -12,6 +13,12 @@ export async function POST(
 ) {
   console.log("========== COMPLETE REQUEST STARTED ==========");
   try {
+    // Authenticate the subcontractor
+    const authResult = await getAuthenticatedSubcontractor(request);
+    if (!authResult) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const formData = await request.formData();
     const completionNotes = String(formData.get("completionNotes") ?? "");
@@ -27,6 +34,11 @@ export async function POST(
     if (!existingRequest) {
       console.log("❌ Request not found");
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    }
+
+    // Verify the sub is assigned to this request
+    if (existingRequest.assignedSubcontractorId !== authResult.subcontractor.id) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
     console.log("Current status:", existingRequest.status);
     // ========= Upload completion photos =========

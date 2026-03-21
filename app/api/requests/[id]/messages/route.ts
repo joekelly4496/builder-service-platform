@@ -1,11 +1,81 @@
 import { db } from "@/lib/db";
-import { serviceRequestMessages, serviceRequests, homes, subcontractors, subcontractorMagicLinks, homeownerAccounts, builders } from "@/lib/db/schema";
+import { serviceRequestMessages, serviceRequests, homes, subcontractors, subcontractorMagicLinks, homeownerAccounts, builders, builderAccounts, subcontractorAccounts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emails/send";
 import { getNewMessageEmail } from "@/lib/emails/templates";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+/**
+ * Verify the caller has access to this service request.
+ * Returns the user's role and info, or null if unauthorized.
+ */
+async function verifyMessageAccess(request: Request, serviceRequestId: string) {
+  // Try cookie-based auth (builder/homeowner portals)
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // Check if builder
+      const [builderAccount] = await db
+        .select()
+        .from(builderAccounts)
+        .where(eq(builderAccounts.supabaseUserId, user.id))
+        .limit(1);
+      if (builderAccount) return { role: "builder" as const, builderId: builderAccount.builderId };
+
+      // Check if homeowner
+      const [homeownerAccount] = await db
+        .select()
+        .from(homeownerAccounts)
+        .where(eq(homeownerAccounts.supabaseUserId, user.id))
+        .limit(1);
+      if (homeownerAccount) return { role: "homeowner" as const, homeId: homeownerAccount.homeId };
+    }
+  } catch {
+    // Cookie auth failed, try bearer token
+  }
+
+  // Try bearer token auth (sub portal)
+  const authHeader = request.headers.get("authorization");
+  if (authHeader) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      const [subAccount] = await db
+        .select()
+        .from(subcontractorAccounts)
+        .where(eq(subcontractorAccounts.supabaseUserId, user.id))
+        .limit(1);
+      if (subAccount) return { role: "subcontractor" as const, subcontractorId: subAccount.subcontractorId };
+
+      // Also check cookie-based roles via bearer
+      const [builderAccount] = await db
+        .select()
+        .from(builderAccounts)
+        .where(eq(builderAccounts.supabaseUserId, user.id))
+        .limit(1);
+      if (builderAccount) return { role: "builder" as const, builderId: builderAccount.builderId };
+
+      const [homeownerAccount] = await db
+        .select()
+        .from(homeownerAccounts)
+        .where(eq(homeownerAccounts.supabaseUserId, user.id))
+        .limit(1);
+      if (homeownerAccount) return { role: "homeowner" as const, homeId: homeownerAccount.homeId };
+    }
+  }
+
+  return null;
+}
 
 export async function GET(
   request: Request,
@@ -13,6 +83,33 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const auth = await verifyMessageAccess(request, id);
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify the caller has access to this specific request
+    const [sr] = await db
+      .select()
+      .from(serviceRequests)
+      .where(eq(serviceRequests.id, id))
+      .limit(1);
+
+    if (!sr) {
+      return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    }
+
+    if (auth.role === "builder" && sr.builderId !== auth.builderId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.role === "homeowner" && sr.homeId !== auth.homeId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.role === "subcontractor" && sr.assignedSubcontractorId !== auth.subcontractorId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const messages = await db
       .select()
       .from(serviceRequestMessages)
@@ -31,6 +128,12 @@ export async function POST(
   console.log("========== NEW MESSAGE API STARTED ==========");
   try {
     const { id } = await params;
+
+    const auth = await verifyMessageAccess(request, id);
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { senderType, senderName, senderEmail, message } = body;
     console.log("Request ID:", id);
@@ -53,6 +156,17 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }
     const requestData = requestDataResults[0];
+
+    // Verify caller has access to this specific request
+    if (auth.role === "builder" && requestData.request.builderId !== auth.builderId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.role === "homeowner" && requestData.home.id !== auth.homeId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.role === "subcontractor" && requestData.request.assignedSubcontractorId !== auth.subcontractorId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
 
     const [newMessage] = await db
       .insert(serviceRequestMessages)

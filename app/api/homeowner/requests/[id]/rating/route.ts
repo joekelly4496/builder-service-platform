@@ -15,6 +15,17 @@ export async function GET(
     }
     const { id } = await params;
 
+    // Verify the request belongs to the homeowner's home
+    const [sr] = await db
+      .select()
+      .from(serviceRequests)
+      .where(eq(serviceRequests.id, id))
+      .limit(1);
+
+    if (!sr || sr.homeId !== homeowner.home.id) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     const [rating] = await db
       .select()
       .from(serviceRequestRatings)
@@ -55,6 +66,11 @@ export async function POST(
 
     if (!serviceRequest) {
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    }
+
+    // Verify the request belongs to the homeowner's home
+    if (serviceRequest.homeId !== homeowner.home.id) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     const [existing] = await db
