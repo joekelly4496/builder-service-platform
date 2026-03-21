@@ -34,12 +34,16 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Public builder routes that don't require authentication
+  const publicBuilderPaths = ["/builder/login", "/builder/onboarding"];
+  const isPublicBuilderPath = publicBuilderPaths.some((path) => pathname.startsWith(path));
+
   // Protected page routes that require authentication
   const protectedPagePaths = ["/dashboard", "/homeowner", "/builder"];
-  const isProtectedPage = protectedPagePaths.some((path) => pathname.startsWith(path));
+  const isProtectedPage = protectedPagePaths.some((path) => pathname.startsWith(path)) && !isPublicBuilderPath;
 
   if (isProtectedPage && !user) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/builder/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
