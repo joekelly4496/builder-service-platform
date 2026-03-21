@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import NotificationBell from "@/app/components/NotificationBell";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,6 +32,7 @@ export default function SubDashboardPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [accessToken, setAccessToken] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -40,6 +42,7 @@ export default function SubDashboardPage() {
         return;
       }
 
+      setAccessToken(session.access_token);
       const res = await fetch("/api/sub/dashboard", {
         headers: { authorization: `Bearer ${session.access_token}` },
       });
@@ -107,12 +110,17 @@ export default function SubDashboardPage() {
               <h1 className="text-2xl font-bold">Welcome, {subcontractor?.contactName}!</h1>
               <p className="text-purple-200 font-medium mt-1">{subcontractor?.companyName}</p>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-semibold text-sm transition-all"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-3">
+              {accessToken && (
+                <NotificationBell apiUrl="/api/sub/notifications" accessToken={accessToken} />
+              )}
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-semibold text-sm transition-all"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </div>

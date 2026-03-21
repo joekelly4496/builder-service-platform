@@ -3,6 +3,7 @@ import { serviceRequests, homes, subcontractors, builders, smsLogs, homeownerAcc
 import { eq, count, and, gte, countDistinct, sql } from "drizzle-orm";
 import Link from "next/link";
 import CalendarFeedButton from "./CalendarFeedButton";
+import BuilderNotificationBell from "./BuilderNotificationBell";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 import { redirect } from "next/navigation";
 
@@ -62,12 +63,15 @@ export default async function DashboardPage() {
                 </h1>
                 <p className="text-base font-medium text-slate-600 mt-1">Manage your service requests and team</p>
               </div>
-              <Link
-                href="/"
-                className="px-5 py-2.5 border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-semibold text-sm text-slate-700 hover:border-slate-400"
-              >
-                ← Back to Home
-              </Link>
+              <div className="flex items-center gap-3">
+                <BuilderNotificationBell />
+                <Link
+                  href="/"
+                  className="px-5 py-2.5 border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-semibold text-sm text-slate-700 hover:border-slate-400"
+                >
+                  ← Back to Home
+                </Link>
+              </div>
             </div>
           </div>
         </div>

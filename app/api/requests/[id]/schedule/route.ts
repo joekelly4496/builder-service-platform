@@ -8,6 +8,7 @@ import { formatICSDate, escapeICSText } from "@/lib/utils/calendar";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
 import { getAuthenticatedSubcontractor } from "@/lib/utils/sub-auth";
+import { createBuilderNotification } from "@/lib/notifications/create-builder";
 
 export async function POST(
   request: Request,
@@ -231,9 +232,18 @@ END:VCALENDAR`;
           text: `Appointment Scheduled\n\n${subName} has scheduled the ${requestData.request.tradeCategory} service request at ${address}.\n\nDate: ${schedDate}\nWindow: ${windowLabel}\nHomeowner: ${requestData.home.homeownerName}\nContractor: ${subName}${notes ? `\nNotes: ${notes}` : ""}\n\nView details in your builder dashboard.`,
         });
         console.log("✅ Schedule notification email sent to builder");
+
+          // In-app notification for builder
+          await createBuilderNotification({
+            builderId: requestData.request.builderId,
+            type: "request_scheduled",
+            title: `Appointment Scheduled: ${requestData.request.tradeCategory}`,
+            message: `${subName} scheduled ${requestData.request.tradeCategory} at ${address} for ${schedDate}, ${windowLabel}.`,
+            linkUrl: `/dashboard`,
+          });
       }
     } catch (builderEmailErr) {
-      console.error("Failed to send builder schedule email:", builderEmailErr);
+      console.error("Failed to send builder schedule notification:", builderEmailErr);
     }
 
     return NextResponse.json({ success: true });

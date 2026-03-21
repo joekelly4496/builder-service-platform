@@ -6,6 +6,8 @@ import { sendEmail } from "@/lib/emails/send";
 import { getNewMessageEmail } from "@/lib/emails/templates";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
+import { createBuilderNotification } from "@/lib/notifications/create-builder";
+import { createSubNotification } from "@/lib/notifications/create-sub";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -207,7 +209,7 @@ export async function POST(
       }
     };
 
-    // Helper: email the builder about a new message
+    // Helper: email + in-app notify the builder about a new message
     const notifyBuilder = async () => {
       try {
         const [builder] = await db
@@ -231,9 +233,34 @@ export async function POST(
             text: builderEmailContent.text,
           });
           console.log("Builder email result:", result);
+
+          await createBuilderNotification({
+            builderId: requestData.home.builderId,
+            type: "new_message",
+            title: `New message from ${senderName}`,
+            message: `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`,
+            linkUrl: `/dashboard`,
+          });
         }
       } catch (err) {
         console.error("Failed to notify builder:", err);
+      }
+    };
+
+    // Helper: in-app notify the subcontractor about a new message
+    const notifySub = async () => {
+      try {
+        if (requestData.request.assignedSubcontractorId) {
+          await createSubNotification({
+            subcontractorId: requestData.request.assignedSubcontractorId,
+            type: "new_message",
+            title: `New message from ${senderName}`,
+            message: `${message.substring(0, 100)}${message.length > 100 ? "..." : ""}`,
+            linkUrl: `/sub/requests/${id}`,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to create sub notification:", err);
       }
     };
 
@@ -295,6 +322,7 @@ export async function POST(
         text: subEmailContent.text,
       });
       console.log("Subcontractor email result:", subResult);
+      await notifySub();
       if (homeownerResult.success && subResult.success) {
         console.log("✅ Both notifications sent successfully!");
       } else {
@@ -374,8 +402,9 @@ export async function POST(
         console.log("❌ Email failed:", (emailResult as any).error);
       }
 
-      // Notify builder about homeowner's message
+      // Notify builder and sub about homeowner's message
       await notifyBuilder();
+      await notifySub();
     }
     console.log("========== NEW MESSAGE API COMPLETED ==========");
     return NextResponse.json({ success: true, message: newMessage });

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getAuthenticatedBuilder } from "@/lib/utils/builder-auth";
 import { getAuthenticatedSubcontractor } from "@/lib/utils/sub-auth";
 import { sendEmail } from "@/lib/emails/send";
+import { createBuilderNotification } from "@/lib/notifications/create-builder";
 
 export async function POST(
   req: Request,
@@ -112,9 +113,18 @@ export async function POST(
             text: `Request Acknowledged\n\n${subName} has acknowledged the ${requestData.request.tradeCategory} service request at ${address}.\n\nThe subcontractor has confirmed they've seen this request and will respond with scheduling details.`,
           });
           console.log("✅ Acknowledge notification email sent to builder");
+
+          // In-app notification for builder
+          await createBuilderNotification({
+            builderId: requestData.request.builderId,
+            type: "request_acknowledged",
+            title: `Request Acknowledged: ${requestData.request.tradeCategory}`,
+            message: `${subName} has acknowledged the ${requestData.request.tradeCategory} request at ${address}.`,
+            linkUrl: `/dashboard`,
+          });
         }
       } catch (emailErr) {
-        console.error("Failed to send builder acknowledge email:", emailErr);
+        console.error("Failed to send builder acknowledge notification:", emailErr);
       }
     }
 

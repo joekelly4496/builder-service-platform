@@ -463,6 +463,28 @@ export const staffUsers = pgTable("staff_users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const builderNotifications = pgTable("builder_notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  builderId: uuid("builder_id").references(() => builders.id).notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  linkUrl: text("link_url"),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const subNotifications = pgTable("sub_notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  linkUrl: text("link_url"),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const billingRecords = pgTable("billing_records", {
   id: uuid("id").primaryKey().defaultRandom(),
   builderId: uuid("builder_id").references(() => builders.id).notNull(),

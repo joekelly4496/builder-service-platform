@@ -6,6 +6,7 @@ import { put } from "@vercel/blob";
 import { createNotification } from "@/lib/notifications/create";
 import { sendSMSToHomeowner } from "@/lib/sms/send";
 import { getAuthenticatedSubcontractor } from "@/lib/utils/sub-auth";
+import { createBuilderNotification } from "@/lib/notifications/create-builder";
 
 export async function POST(
   request: Request,
@@ -112,6 +113,20 @@ export async function POST(
       }
     } catch (notifErr) {
       console.error("Failed to create completion notification:", notifErr);
+    }
+
+    // In-app notification for builder
+    try {
+      const subName = authResult.subcontractor.companyName || authResult.subcontractor.contactName;
+      await createBuilderNotification({
+        builderId: existingRequest.builderId,
+        type: "request_completed",
+        title: `Job Completed: ${existingRequest.tradeCategory}`,
+        message: `${subName} has completed the ${existingRequest.tradeCategory} request.${photoUrls.length > 0 ? ` ${photoUrls.length} photo(s) uploaded.` : ""}`,
+        linkUrl: `/dashboard`,
+      });
+    } catch (builderNotifErr) {
+      console.error("Failed to create builder completion notification:", builderNotifErr);
     }
 
     // Send SMS notification for completion
