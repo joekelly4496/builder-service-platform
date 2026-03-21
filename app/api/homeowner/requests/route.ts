@@ -19,6 +19,8 @@ import {
 import { generateMagicToken, generateMagicLink } from "@/lib/utils/magicLinks";
 import { put } from "@vercel/blob";
 import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
+import { createBuilderNotification } from "@/lib/notifications/create-builder";
+import { createSubNotification } from "@/lib/notifications/create-sub";
 
 // POST /api/homeowner/requests — submit a new service request
 export async function POST(request: Request) {
@@ -234,6 +236,32 @@ export async function POST(request: Request) {
         html: builderEmailContent.html,
         text: builderEmailContent.text,
       });
+    }
+
+    // In-app notification for builder
+    try {
+      await createBuilderNotification({
+        builderId: home.builderId,
+        type: "new_request",
+        title: `New Request: ${tradeCategory}`,
+        message: `${home.homeownerName} submitted a ${priority} ${tradeCategory} request at ${home.address}. Assigned to ${subcontractor.companyName}.`,
+        linkUrl: `/dashboard`,
+      });
+    } catch (notifErr) {
+      console.error("Failed to create builder notification:", notifErr);
+    }
+
+    // In-app notification for subcontractor
+    try {
+      await createSubNotification({
+        subcontractorId: assignment.subcontractorId,
+        type: "request_assigned",
+        title: `New Request Assigned: ${tradeCategory}`,
+        message: `${priority.charAt(0).toUpperCase() + priority.slice(1)} ${tradeCategory} request at ${home.address}, ${home.city}. Please acknowledge promptly.`,
+        linkUrl: `/sub/requests/${serviceRequest.id}`,
+      });
+    } catch (notifErr) {
+      console.error("Failed to create sub notification:", notifErr);
     }
 
     return NextResponse.json({

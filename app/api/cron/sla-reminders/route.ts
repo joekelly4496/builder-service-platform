@@ -3,6 +3,7 @@ import { serviceRequests, subcontractors, homes } from "@/lib/db/schema";
 import { eq, and, lt, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emails/send";
+import { createSubNotification } from "@/lib/notifications/create-sub";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,19 @@ export async function GET(request: Request) {
             .update(serviceRequests)
             .set({ slaReminderSent: true })
             .where(eq(serviceRequests.id, request.id));
+
+          // In-app notification for sub
+          try {
+            await createSubNotification({
+              subcontractorId: subcontractor.id,
+              type: "sla_reminder",
+              title: `SLA Reminder: ${request.tradeCategory}`,
+              message: `${minutesRemaining} minutes remaining to acknowledge the ${request.tradeCategory} request at ${home.address}.`,
+              linkUrl: `/sub/requests/${request.id}`,
+            });
+          } catch (notifErr) {
+            console.error("Failed to create SLA sub notification:", notifErr);
+          }
 
           console.log(`✅ Reminder sent for request ${request.id}`);
           emailsSent++;
