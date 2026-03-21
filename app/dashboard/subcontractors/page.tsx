@@ -86,6 +86,12 @@ export default async function SubcontractorsPage() {
             </div>
             <div className="flex gap-3">
               <Link
+                href="/dashboard/subcontractors/search"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+              >
+                Find Subs
+              </Link>
+              <Link
                 href="/dashboard/subcontractors/add"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
               >

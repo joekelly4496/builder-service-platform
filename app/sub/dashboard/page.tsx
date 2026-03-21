@@ -114,6 +114,12 @@ export default function SubDashboardPage() {
               {accessToken && (
                 <NotificationBell apiUrl="/api/sub/notifications" accessToken={accessToken} />
               )}
+              <Link
+                href="/sub/profile"
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-semibold text-sm transition-all"
+              >
+                Edit Profile
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-semibold text-sm transition-all"
