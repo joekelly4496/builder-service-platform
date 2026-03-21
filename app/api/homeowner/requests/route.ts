@@ -7,12 +7,14 @@ import {
   subcontractors,
   subcontractorMagicLinks,
   homeownerMagicLinks,
+  builders,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sendEmail } from "@/lib/emails/send";
 import {
   getNewRequestEmail,
   getHomeownerConfirmationEmail,
+  getBuilderNewRequestEmail,
 } from "@/lib/emails/templates";
 import { generateMagicToken, generateMagicLink } from "@/lib/utils/magicLinks";
 import { put } from "@vercel/blob";
@@ -207,6 +209,32 @@ export async function POST(request: Request) {
       html: homeownerEmailContent.html,
       text: homeownerEmailContent.text,
     });
+
+    // Send builder notification email
+    const [builder] = await db
+      .select()
+      .from(builders)
+      .where(eq(builders.id, home.builderId))
+      .limit(1);
+
+    if (builder) {
+      const builderEmailContent = getBuilderNewRequestEmail({
+        builderName: builder.contactName,
+        homeownerName: home.homeownerName,
+        tradeCategory,
+        homeAddress: `${home.address}, ${home.city}, ${home.state}`,
+        description,
+        priority,
+        subcontractorName: subcontractor.companyName,
+      });
+
+      await sendEmail({
+        to: builder.email,
+        subject: builderEmailContent.subject,
+        html: builderEmailContent.html,
+        text: builderEmailContent.text,
+      });
+    }
 
     return NextResponse.json({
       success: true,

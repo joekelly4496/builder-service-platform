@@ -120,6 +120,116 @@ This link is unique to you and will expire in 7 days.
   };
 }
 
+export function getBuilderNewRequestEmail({
+  builderName,
+  homeownerName,
+  tradeCategory,
+  homeAddress,
+  description,
+  priority,
+  subcontractorName,
+}: {
+  builderName: string;
+  homeownerName: string;
+  tradeCategory: string;
+  homeAddress: string;
+  description: string;
+  priority: string;
+  subcontractorName: string;
+}) {
+  const priorityEmoji = priority === "urgent" ? "🔴" : priority === "normal" ? "🟡" : "🟢";
+
+  return {
+    subject: `${priorityEmoji} New ${tradeCategory} Request - ${homeAddress}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+  <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">📋 New Service Request</h1>
+  </div>
+
+  <div style="background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 20px;">
+      Hi ${builderName},
+    </p>
+
+    <p style="font-size: 16px; color: #475569; margin-bottom: 25px;">
+      A new service request has been submitted by <strong>${homeownerName}</strong>:
+    </p>
+
+    <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; font-weight: 600;">📍 LOCATION</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;">${homeAddress}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; font-weight: 600;">🔧 SERVICE</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500; text-transform: capitalize;">${tradeCategory}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; font-weight: 600;">⚡ PRIORITY</td>
+          <td style="padding: 8px 0;">
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; ${
+              priority === "urgent"
+                ? "background: #fee2e2; color: #991b1b;"
+                : priority === "normal"
+                ? "background: #fef3c7; color: #92400e;"
+                : "background: #dcfce7; color: #166534;"
+            }">
+              ${priority.toUpperCase()}
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; font-weight: 600;">👷 ASSIGNED TO</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;">${subcontractorName}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+      <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">📝 Homeowner Description:</p>
+      <p style="margin: 10px 0 0 0; color: #78350f; font-size: 14px;">${description}</p>
+    </div>
+
+    <p style="font-size: 14px; color: #475569; margin-bottom: 10px;">
+      The assigned subcontractor has been notified and the SLA clock is running.
+    </p>
+
+    <p style="font-size: 13px; color: #64748b; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      Log in to your builder dashboard to track this request.
+    </p>
+  </div>
+
+</body>
+</html>
+    `,
+    text: `
+Hi ${builderName},
+
+A new service request has been submitted by ${homeownerName}:
+
+LOCATION: ${homeAddress}
+SERVICE: ${tradeCategory}
+PRIORITY: ${priority.toUpperCase()}
+ASSIGNED TO: ${subcontractorName}
+
+DESCRIPTION:
+${description}
+
+The assigned subcontractor has been notified and the SLA clock is running.
+Log in to your builder dashboard to track this request.
+    `,
+  };
+}
+
 export function getSLAReminderEmail({
   subName,
   tradeCategory,
