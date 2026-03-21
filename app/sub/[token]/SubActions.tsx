@@ -26,8 +26,12 @@ export default function SubActions({
 
     setLoading(true);
     try {
+      const ackHeaders: Record<string, string> = {};
+      if (accessToken) ackHeaders["Authorization"] = `Bearer ${accessToken}`;
+
       const res = await fetch(`/api/requests/${requestId}/acknowledge`, {
         method: "POST",
+        headers: ackHeaders,
       });
       const data = await res.json();
       if (data.success) {
