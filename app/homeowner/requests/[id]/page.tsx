@@ -271,7 +271,13 @@ export default function HomeownerRequestDetail({
                   <div className="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
                     <p className="text-sm font-bold text-emerald-900 uppercase mb-2">Scheduled Appointment</p>
                     <p className="text-2xl font-bold text-emerald-700 mb-2">
-                      {new Date(request.scheduledFor).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {new Date(request.scheduledFor).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                      {new Date(request.scheduledFor).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                      {(() => {
+                        const hour = new Date(request.scheduledFor).getHours();
+                        if (hour === 8) return " — Morning (8 AM – 12 PM)";
+                        if (hour === 12) return " — Afternoon (12 PM – 4 PM)";
+                        return " — All Day (8 AM – 4 PM)";
+                      })()}
                     </p>
                     <p className="text-sm text-emerald-800 font-medium mb-3">Please ensure someone is home at this time.</p>
                     <div className="flex gap-2">

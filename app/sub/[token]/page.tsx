@@ -185,13 +185,13 @@ export default async function SubPortalPage({
                           weekday: "long",
                           month: "long",
                           day: "numeric",
-                        })}{" "}
-                        at{" "}
-                        {new Date(request.scheduledFor).toLocaleTimeString("en-US", {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
                         })}
+                        {(() => {
+                          const hour = new Date(request.scheduledFor).getHours();
+                          if (hour === 8) return " — Morning (8 AM – 12 PM)";
+                          if (hour === 12) return " — Afternoon (12 PM – 4 PM)";
+                          return " — All Day (8 AM – 4 PM)";
+                        })()}
                       </p>
                     </div>
                   )}

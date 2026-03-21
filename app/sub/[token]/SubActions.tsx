@@ -5,9 +5,11 @@ import { useState } from "react";
 export default function SubActions({
   requestId,
   currentStatus,
+  accessToken,
 }: {
   requestId: string;
   currentStatus: string;
+  accessToken?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -43,38 +45,27 @@ export default function SubActions({
 
   const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) {
-      alert("Please select both date and time");
+      alert("Please select both a date and time window");
       return;
     }
 
     setLoading(true);
     try {
-      const timeMatch = selectedTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (!timeMatch) {
-        alert("Invalid time format");
-        setLoading(false);
-        return;
-      }
-
-      let hours = parseInt(timeMatch[1]);
-      const minutes = parseInt(timeMatch[2]);
-      const period = timeMatch[3].toUpperCase();
-
-      if (period === "PM" && hours !== 12) {
-        hours += 12;
-      } else if (period === "AM" && hours === 12) {
-        hours = 0;
-      }
-
+      // Set scheduledFor to the start of the selected window
+      const startHours = selectedTime === "morning" ? 8 : selectedTime === "afternoon" ? 12 : 8;
       const scheduledFor = new Date(selectedDate);
-      scheduledFor.setHours(hours, minutes, 0, 0);
+      scheduledFor.setHours(startHours, 0, 0, 0);
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
       const res = await fetch(`/api/requests/${requestId}/schedule`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          scheduledFor: scheduledFor.toISOString(), 
-          notes: notes || undefined 
+        headers,
+        body: JSON.stringify({
+          scheduledFor: scheduledFor.toISOString(),
+          timeWindow: selectedTime,
+          notes: notes || undefined
         }),
       });
 
@@ -103,8 +94,12 @@ export default function SubActions({
         formData.append("photos", photo);
       });
 
+      const completeHeaders: Record<string, string> = {};
+      if (accessToken) completeHeaders["Authorization"] = `Bearer ${accessToken}`;
+
       const res = await fetch(`/api/requests/${requestId}/complete`, {
         method: "POST",
+        headers: completeHeaders,
         body: formData,
       });
 
@@ -175,11 +170,10 @@ export default function SubActions({
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
-  const timeSlots = [
-    "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
-    "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
-    "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM",
-    "5:00 PM", "5:30 PM", "6:00 PM"
+  const timeWindows = [
+    { value: "morning", label: "Morning", range: "8 AM – 12 PM" },
+    { value: "afternoon", label: "Afternoon", range: "12 PM – 4 PM" },
+    { value: "allday", label: "All Day", range: "8 AM – 4 PM" },
   ];
 
   const days = getDaysInMonth(currentMonth);
@@ -265,17 +259,18 @@ export default function SubActions({
 
                 {selectedDate && (
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Select Time</label>
-                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border-2 border-slate-200 rounded-xl p-2">
-                      {timeSlots.map((slot) => {
-                        const isSelected = selectedTime === slot;
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Select Time Window</label>
+                    <div className="space-y-2">
+                      {timeWindows.map((window) => {
+                        const isSelected = selectedTime === window.value;
                         return (
                           <button
-                            key={slot}
-                            onClick={() => setSelectedTime(slot)}
-                            className={`py-2 px-3 rounded-lg font-semibold text-sm transition ${isSelected ? "bg-indigo-600 text-white" : "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200"}`}
+                            key={window.value}
+                            onClick={() => setSelectedTime(window.value)}
+                            className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition flex items-center justify-between ${isSelected ? "bg-indigo-600 text-white" : "bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200"}`}
                           >
-                            {slot}
+                            <span>{window.label}</span>
+                            <span className={`text-xs font-medium ${isSelected ? "text-indigo-200" : "text-slate-500"}`}>{window.range}</span>
                           </button>
                         );
                       })}
@@ -289,7 +284,9 @@ export default function SubActions({
                     <p className="text-base font-bold text-indigo-700">
                       {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
                     </p>
-                    <p className="text-base font-bold text-indigo-700">{selectedTime}</p>
+                    <p className="text-base font-bold text-indigo-700">
+                      {timeWindows.find((w) => w.value === selectedTime)?.label} ({timeWindows.find((w) => w.value === selectedTime)?.range})
+                    </p>
                   </div>
                 )}
 

@@ -53,6 +53,7 @@ export default function SubRequestDetailPage({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -62,6 +63,7 @@ export default function SubRequestDetailPage({
         return;
       }
 
+      setToken(session.access_token);
       const res = await fetch(`/api/sub/requests/${id}`, {
         headers: { authorization: `Bearer ${session.access_token}` },
       });
@@ -182,9 +184,13 @@ export default function SubRequestDetailPage({
                     <p className="text-2xl font-bold text-indigo-700">
                       {new Date(request.scheduledFor).toLocaleDateString("en-US", {
                         weekday: "long", month: "long", day: "numeric",
-                      })} at {new Date(request.scheduledFor).toLocaleTimeString("en-US", {
-                        hour: "numeric", minute: "2-digit", hour12: true,
                       })}
+                      {(() => {
+                        const hour = new Date(request.scheduledFor).getHours();
+                        if (hour === 8) return " — Morning (8 AM – 12 PM)";
+                        if (hour === 12) return " — Afternoon (12 PM – 4 PM)";
+                        return " — All Day (8 AM – 4 PM)";
+                      })()}
                     </p>
                   </div>
                 )}
@@ -244,7 +250,7 @@ export default function SubRequestDetailPage({
           </div>
 
           <div className="lg:col-span-1">
-            <SubActions requestId={request.id} currentStatus={request.status} />
+            <SubActions requestId={request.id} currentStatus={request.status} accessToken={token} />
           </div>
         </div>
       </div>

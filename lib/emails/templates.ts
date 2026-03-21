@@ -310,6 +310,7 @@ export function getScheduleConfirmationEmail({
   tradeCategory,
   homeAddress,
   scheduledFor,
+  timeWindow,
   notes,
 }: {
   homeownerName: string;
@@ -319,6 +320,7 @@ export function getScheduleConfirmationEmail({
   tradeCategory: string;
   homeAddress: string;
   scheduledFor: Date;
+  timeWindow?: string;
   notes?: string;
 }) {
   const formattedDate = scheduledFor.toLocaleDateString("en-US", {
@@ -327,7 +329,7 @@ export function getScheduleConfirmationEmail({
     day: "numeric",
     year: "numeric",
   });
-  const formattedTime = scheduledFor.toLocaleTimeString("en-US", {
+  const formattedTime = timeWindow === "morning" ? "Morning (8 AM – 12 PM)" : timeWindow === "afternoon" ? "Afternoon (12 PM – 4 PM)" : timeWindow === "allday" ? "All Day (8 AM – 4 PM)" : scheduledFor.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

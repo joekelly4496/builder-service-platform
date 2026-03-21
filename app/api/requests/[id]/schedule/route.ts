@@ -22,7 +22,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { scheduledFor, notes } = body;
+    const { scheduledFor, timeWindow, notes } = body;
     // Get request details with home and subcontractor info
     const [requestData] = await db
       .select({
@@ -74,11 +74,23 @@ export async function POST(
       tradeCategory: requestData.request.tradeCategory,
       homeAddress: `${requestData.home.address}, ${requestData.home.city}, ${requestData.home.state}`,
       scheduledFor: new Date(scheduledFor),
+      timeWindow,
       notes,
     });
-    // Create .ics calendar event
+    // Create .ics calendar event based on time window
     const startDate = new Date(scheduledFor);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hour
+    let endDate: Date;
+    if (timeWindow === "morning") {
+      endDate = new Date(startDate);
+      endDate.setHours(12, 0, 0, 0);
+    } else if (timeWindow === "afternoon") {
+      endDate = new Date(startDate);
+      endDate.setHours(16, 0, 0, 0);
+    } else {
+      // allday or fallback
+      endDate = new Date(startDate);
+      endDate.setHours(16, 0, 0, 0);
+    }
     const now = new Date();
     const summary = `${requestData.request.tradeCategory.charAt(0).toUpperCase() + requestData.request.tradeCategory.slice(1)} Service Appointment`;
     const description = `Contractor: ${requestData.subcontractor.companyName}\\nContact: ${requestData.subcontractor.contactName}\\nPhone: ${requestData.subcontractor.phone || "N/A"}${notes ? `\\n\\nNotes: ${notes}` : ""}`;
@@ -129,11 +141,12 @@ END:VCALENDAR`;
 
       if (account) {
         const schedDate = new Date(scheduledFor).toLocaleDateString();
+        const windowText = timeWindow === "morning" ? "Morning (8 AM – 12 PM)" : timeWindow === "afternoon" ? "Afternoon (12 PM – 4 PM)" : "All Day (8 AM – 4 PM)";
         await createNotification({
           homeownerId: account.id,
           type: "request_status_change",
           title: `Service Scheduled: ${requestData.request.tradeCategory}`,
-          message: `${requestData.subcontractor.companyName} has scheduled your ${requestData.request.tradeCategory} service for ${schedDate}.`,
+          message: `${requestData.subcontractor.companyName} has scheduled your ${requestData.request.tradeCategory} service for ${schedDate}, ${windowText}.`,
           linkUrl: `/homeowner/requests/${id}`,
         });
       }
@@ -144,11 +157,11 @@ END:VCALENDAR`;
     // Send SMS notification for schedule confirmation
     try {
       const schedDate = new Date(scheduledFor).toLocaleDateString();
-      const schedTime = new Date(scheduledFor).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const windowLabel = timeWindow === "morning" ? "Morning (8 AM – 12 PM)" : timeWindow === "afternoon" ? "Afternoon (12 PM – 4 PM)" : "All Day (8 AM – 4 PM)";
       await sendSMSToHomeowner({
         builderId: requestData.home.builderId,
         homeId: requestData.home.id,
-        message: `Your ${requestData.request.tradeCategory} service has been scheduled for ${schedDate} at ${schedTime}. ${requestData.subcontractor.companyName} will be at ${requestData.home.address}.`,
+        message: `Your ${requestData.request.tradeCategory} service has been scheduled for ${schedDate}, ${windowLabel}. ${requestData.subcontractor.companyName} will be at ${requestData.home.address}.`,
       });
     } catch (smsErr) {
       console.error("Failed to send schedule SMS:", smsErr);
