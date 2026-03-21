@@ -60,17 +60,7 @@ export default function HomeownerMaintenancePage() {
     }
 
     try {
-      const dashRes = await fetch(`/api/homeowner/dashboard?userId=${session.user.id}`);
-      const dashData = await dashRes.json();
-
-      if (!dashData.success || !dashData.home) {
-        setError("No home found for your account");
-        setLoading(false);
-        return;
-      }
-
-      const homeId = dashData.home.id;
-      const res = await fetch(`/api/maintenance-items?homeId=${homeId}`);
+      const res = await fetch("/api/homeowner/maintenance");
       const data = await res.json();
 
       if (data.items) {
