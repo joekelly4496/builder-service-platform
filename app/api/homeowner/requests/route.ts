@@ -1,14 +1,13 @@
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
   serviceRequests,
-  homes,
   homeTradeAssignments,
   serviceRequestAuditLog,
   subcontractors,
   subcontractorMagicLinks,
   homeownerMagicLinks,
 } from "@/lib/db/schema";
-import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { sendEmail } from "@/lib/emails/send";
 import {
@@ -17,46 +16,39 @@ import {
 } from "@/lib/emails/templates";
 import { generateMagicToken, generateMagicLink } from "@/lib/utils/magicLinks";
 import { put } from "@vercel/blob";
+import { getAuthenticatedHomeowner } from "@/lib/utils/homeowner-auth";
 
+// POST /api/homeowner/requests — submit a new service request
 export async function POST(request: Request) {
-  console.log("========== SUBMIT REQUEST STARTED ==========");
-
   try {
-    const formData = await request.formData();
+    const result = await getAuthenticatedHomeowner();
+    if (!result) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const homeId = String(formData.get("homeId") ?? "");
+    const { home } = result;
+    const homeownerEmail = home.homeownerEmail;
+
+    const formData = await request.formData();
     const tradeCategory = String(formData.get("tradeCategory") ?? "");
     const priority = String(formData.get("priority") ?? "normal");
     const description = String(formData.get("description") ?? "");
-    const homeownerEmail = String(formData.get("homeownerEmail") ?? "");
     const photoFiles = formData.getAll("photos").filter((v): v is File => v instanceof File);
 
-    console.log("========== FORM DATA ==========");
-    console.log("homeId:", homeId);
-    console.log("tradeCategory:", tradeCategory);
-    console.log("priority:", priority);
-    console.log("homeownerEmail:", homeownerEmail);
-    console.log("photoFiles count:", photoFiles.length);
-
-    if (!homeId || !tradeCategory || !priority || !description || !homeownerEmail) {
+    if (!tradeCategory || !priority || !description) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const [home] = await db.select().from(homes).where(eq(homes.id, homeId)).limit(1);
-
-    if (!home) {
-      return NextResponse.json({ success: false, error: "Home not found" }, { status: 404 });
-    }
-
+    // Find the assigned sub for this trade category
     const [assignment] = await db
       .select()
       .from(homeTradeAssignments)
       .where(
         and(
-          eq(homeTradeAssignments.homeId, homeId),
+          eq(homeTradeAssignments.homeId, home.id),
           eq(homeTradeAssignments.tradeCategory, tradeCategory)
         )
       )
@@ -64,7 +56,7 @@ export async function POST(request: Request) {
 
     if (!assignment) {
       return NextResponse.json(
-        { success: false, error: `No subcontractor assigned for ${tradeCategory}` },
+        { error: `No subcontractor assigned for ${tradeCategory}` },
         { status: 400 }
       );
     }
@@ -77,32 +69,22 @@ export async function POST(request: Request) {
 
     if (!subcontractor) {
       return NextResponse.json(
-        { success: false, error: "Assigned subcontractor not found" },
+        { error: "Assigned subcontractor not found" },
         { status: 404 }
       );
     }
 
+    // Upload photos
     const photoUrls: string[] = [];
-
-    console.log("========== STARTING PHOTO UPLOAD ==========");
     if (photoFiles.length > 0) {
       for (let i = 0; i < photoFiles.length; i++) {
         const file = photoFiles[i];
-
-        console.log(`--- File ${i + 1}/${photoFiles.length} ---`);
-        console.log("Name:", file.name);
-        console.log("Size:", file.size);
-        console.log("Type:", file.type);
-
-        if (!file || file.size === 0) {
-          console.log("⚠️ Skipping file (missing or size=0)");
-          continue;
-        }
+        if (!file || file.size === 0) continue;
 
         const safeBase = (file.name || "photo")
           .replace(/\s+/g, "-")
           .replace(/[^a-zA-Z0-9.\-_]/g, "");
-        const key = `requests/${homeId}/${Date.now()}-${i}-${safeBase}`;
+        const key = `requests/${home.id}/${Date.now()}-${i}-${safeBase}`;
 
         try {
           const blob = await put(key, file, {
@@ -110,18 +92,13 @@ export async function POST(request: Request) {
             addRandomSuffix: true,
           });
           photoUrls.push(blob.url);
-          console.log("✅ Uploaded:", blob.url);
         } catch (uploadError: any) {
-          console.error("❌ Upload error:", uploadError?.message ?? uploadError);
+          console.error("Photo upload error:", uploadError?.message ?? uploadError);
         }
       }
-    } else {
-      console.log("No files provided for upload");
     }
 
-    console.log("========== PHOTO UPLOAD COMPLETE ==========");
-    console.log("Total photos successfully uploaded:", photoUrls.length);
-
+    // SLA deadlines
     const now = new Date();
     let acknowledgeMinutes = 2880;
     let scheduleMinutes = 7200;
@@ -141,20 +118,18 @@ export async function POST(request: Request) {
       .insert(serviceRequests)
       .values({
         builderId: home.builderId,
-        homeId,
+        homeId: home.id,
         assignedSubcontractorId: assignment.subcontractorId,
         tradeCategory,
         priority: priority as "urgent" | "normal" | "low",
         status: "submitted",
         homeownerDescription: description,
         homeownerContactPreference: homeownerEmail,
-        photoUrls: photoUrls,
+        photoUrls,
         slaAcknowledgeDeadline,
         slaScheduleDeadline,
       })
       .returning();
-
-    console.log("✅ Request created:", serviceRequest.id);
 
     await db.insert(serviceRequestAuditLog).values({
       builderId: home.builderId,
@@ -173,6 +148,7 @@ export async function POST(request: Request) {
       },
     });
 
+    // Generate magic links for email notifications
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const subToken = generateMagicToken();
@@ -191,7 +167,7 @@ export async function POST(request: Request) {
     const homeownerExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     await db.insert(homeownerMagicLinks).values({
-      homeId,
+      homeId: home.id,
       serviceRequestId: serviceRequest.id,
       token: homeownerToken,
       expiresAt: homeownerExpiresAt,
@@ -199,6 +175,7 @@ export async function POST(request: Request) {
 
     const homeownerMagicLink = `${baseUrl}/homeowner/${homeownerToken}`;
 
+    // Send email notifications
     const subEmailContent = getNewRequestEmail({
       subName: subcontractor.contactName,
       companyName: home.homeownerName,
@@ -231,19 +208,19 @@ export async function POST(request: Request) {
       text: homeownerEmailContent.text,
     });
 
-    console.log("========== SUBMIT REQUEST COMPLETED ==========");
-
     return NextResponse.json({
       success: true,
       message: "Service request created successfully!",
       data: {
         requestId: serviceRequest.id,
         photoCount: photoUrls.length,
-        photoUrls,
       },
     });
   } catch (error: any) {
-    console.error("❌ ERROR:", error);
-    return NextResponse.json({ success: false, error: error?.message ?? "Unknown error" }, { status: 500 });
+    console.error("Error submitting homeowner request:", error);
+    return NextResponse.json(
+      { error: error?.message ?? "Unknown error" },
+      { status: 500 }
+    );
   }
 }

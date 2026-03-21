@@ -32,12 +32,6 @@ export default function HomePage() {
               >
                 Homeowner Portal
               </Link>
-              <Link
-                href="/demo-request"
-                className="block text-center border-2 border-blue-200 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-sm"
-              >
-                Submit a Request (Demo)
-              </Link>
             </div>
           </div>
 

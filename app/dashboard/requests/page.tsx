@@ -48,10 +48,7 @@ export default async function RequestsPage() {
               <div className="text-5xl mb-4">📋</div>
               <p className="text-xl font-bold text-slate-900 mb-2">No service requests yet</p>
               <p className="text-base font-medium text-slate-600">
-                Submit a test request from the{" "}
-                <Link href="/demo-request" className="text-blue-600 hover:underline">
-                  homeowner form
-                </Link>
+                Service requests from homeowners will appear here
               </p>
             </div>
           ) : (
