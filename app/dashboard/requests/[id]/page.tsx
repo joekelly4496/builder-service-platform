@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import MessagesSection from "./MessagesSection";
+import JobCostAndReview from "./JobCostAndReview";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,13 @@ export default async function ServiceRequestDetailPage({
   const completedAt =
     (request.request as any).completedAt ??
     (request.request as any).completed_at;
+
+  const jobCostCents =
+    (request.request as any).jobCostCents ??
+    (request.request as any).job_cost_cents ??
+    null;
+
+  const isCompleted = ["completed", "closed"].includes(status);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -524,6 +532,17 @@ export default async function ServiceRequestDetailPage({
                 )}
               </div>
             </div>
+
+            {isCompleted && request.subcontractor && (
+              <JobCostAndReview
+                requestId={id}
+                subcontractorId={request.subcontractor.id}
+                homeId={request.home.id}
+                tradeCategory={tradeCategory}
+                initialJobCostCents={jobCostCents}
+                builderName={request.home.homeownerName ?? "Builder"}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -184,6 +184,7 @@ export const serviceRequests = pgTable("service_requests", {
   slaReminderSent: boolean("sla_reminder_sent").default(false),
   acknowledgedAt: timestamp("acknowledged_at"),
   scheduledFor: timestamp("scheduled_for"),
+  jobCostCents: integer("job_cost_cents"),
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -485,6 +486,28 @@ export const subNotifications = pgTable("sub_notifications", {
   message: text("message").notNull(),
   linkUrl: text("link_url"),
   isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ==================== REVIEWS ====================
+
+export const reviewerTypeEnum = pgEnum("reviewer_type", [
+  "builder",
+  "homeowner",
+]);
+
+export const reviews = pgTable("reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id),
+  builderId: uuid("builder_id").references(() => builders.id),
+  homeId: uuid("home_id").references(() => homes.id),
+  reviewerType: reviewerTypeEnum("reviewer_type").notNull(),
+  reviewerName: text("reviewer_name").notNull(),
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  tradeCategory: text("trade_category"),
+  isPublic: boolean("is_public").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

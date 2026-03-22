@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { subcontractors } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { subcontractors, reviews } from "@/lib/db/schema";
+import { eq, and, desc, avg, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +41,35 @@ export default async function SubcontractorProfilePage({
     notFound();
   }
 
+  // Fetch reviews
+  const reviewList = await db
+    .select()
+    .from(reviews)
+    .where(
+      and(
+        eq(reviews.subcontractorId, sub.id),
+        eq(reviews.isPublic, true)
+      )
+    )
+    .orderBy(desc(reviews.createdAt))
+    .limit(20);
+
+  const [reviewStats] = await db
+    .select({
+      avgRating: avg(reviews.rating),
+      totalCount: count(),
+    })
+    .from(reviews)
+    .where(
+      and(
+        eq(reviews.subcontractorId, sub.id),
+        eq(reviews.isPublic, true)
+      )
+    );
+
+  const avgRating = reviewStats?.avgRating ? parseFloat(String(reviewStats.avgRating)) : 0;
+  const totalReviews = Number(reviewStats?.totalCount ?? 0);
+
   const trades = (sub.tradeCategories as string[]) ?? [];
   const pricing = (sub.pricingRanges as PricingRange[]) ?? [];
   const hasLicense = !!sub.licenseNumber;
@@ -77,6 +106,18 @@ export default async function SubcontractorProfilePage({
               <p className="text-purple-200 font-medium mt-1">
                 {sub.contactName}
               </p>
+              {totalReviews > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-yellow-300 text-lg">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <span key={s} style={{ color: s <= Math.round(avgRating) ? "#fbbf24" : "#ffffff40" }}>★</span>
+                    ))}
+                  </span>
+                  <span className="text-purple-200 text-sm font-semibold">
+                    {avgRating.toFixed(1)} ({totalReviews} review{totalReviews !== 1 ? "s" : ""})
+                  </span>
+                </div>
+              )}
               {sub.serviceArea && (
                 <p className="text-purple-200/80 text-sm mt-1">
                   Service Area: {sub.serviceArea}
@@ -205,6 +246,61 @@ export default async function SubcontractorProfilePage({
                   <span className="text-sm font-bold text-slate-900">
                     ${p.min.toLocaleString()} — ${p.max.toLocaleString()}
                   </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reviews */}
+        {reviewList.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">
+                Reviews ({totalReviews})
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-500 text-lg">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} style={{ color: s <= Math.round(avgRating) ? "#f59e0b" : "#e5e7eb" }}>★</span>
+                  ))}
+                </span>
+                <span className="text-slate-600 font-semibold text-sm">
+                  {avgRating.toFixed(1)} avg
+                </span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {reviewList.map((review) => (
+                <div key={review.id} className="p-4 bg-slate-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-900">
+                        {review.reviewerName}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-200 text-slate-600">
+                        {review.reviewerType}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="text-sm text-yellow-500 mb-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <span key={s} style={{ color: s <= review.rating ? "#f59e0b" : "#e5e7eb" }}>★</span>
+                    ))}
+                  </div>
+                  {review.comment && (
+                    <p className="text-sm text-slate-700 font-medium mt-1">
+                      {review.comment}
+                    </p>
+                  )}
+                  {review.tradeCategory && (
+                    <span className="inline-block mt-2 text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded font-semibold">
+                      {tradeLabels[review.tradeCategory] ?? review.tradeCategory}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
