@@ -1,5 +1,28 @@
 -- Phase 2: Reviews + Job Cost Tracking
 
+-- Create helper functions if they don't exist yet
+CREATE OR REPLACE FUNCTION public.auth_builder_id()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT coalesce(
+    current_setting('request.jwt.claims', true)::jsonb ->> 'builder_id',
+    (current_setting('request.jwt.claim.builder_id', true))
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.auth_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT coalesce(
+    current_setting('request.jwt.claims', true)::jsonb ->> 'user_role',
+    (current_setting('request.jwt.claim.user_role', true))
+  );
+$$;
+
 -- Reviewer type enum
 DO $$ BEGIN
   CREATE TYPE reviewer_type AS ENUM ('builder', 'homeowner');
