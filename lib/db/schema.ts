@@ -137,6 +137,15 @@ export const subcontractors = pgTable("subcontractors", {
   isVerified: boolean("is_verified").default(false).notNull(),
   status: text("status").default("active"),
   calendarToken: text("calendar_token").unique(),
+  // Sub Pro subscription fields
+  isSubPro: boolean("is_sub_pro").default(false).notNull(),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripeSmsSubscriptionItemId: varchar("stripe_sms_subscription_item_id", { length: 255 }),
+  // SMS business number fields
+  smsEnabled: boolean("sms_enabled").default(false).notNull(),
+  twilioPhoneNumber: text("twilio_phone_number"),
+  twilioPhoneNumberSid: text("twilio_phone_number_sid"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -521,4 +530,28 @@ export const billingRecords = pgTable("billing_records", {
   periodStart: timestamp("period_start"),
   periodEnd: timestamp("period_end"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ==================== SUB SMS MESSAGES ====================
+
+export const subSmsMessages = pgTable("sub_sms_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id),
+  direction: text("direction").notNull(), // 'outbound' | 'inbound'
+  fromNumber: text("from_number").notNull(),
+  toNumber: text("to_number").notNull(),
+  body: text("body").notNull(),
+  twilioMessageSid: text("twilio_message_sid"),
+  costCents: integer("cost_cents"),
+  status: text("status").default("sent"),
+  stripeUsageReported: boolean("stripe_usage_reported").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const subSmsOptOuts = pgTable("sub_sms_opt_outs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subcontractorId: uuid("subcontractor_id").references(() => subcontractors.id).notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  optedOutAt: timestamp("opted_out_at").defaultNow().notNull(),
 });
